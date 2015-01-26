@@ -3,6 +3,8 @@ import debug_render
 #import transport
 
 def main():
+   debug_render.init()
+   
    for frame, grey_frame in camera.get_frames():
       face_rects, face_points = face_detector.detect_faces(grey_frame)
 
