@@ -3,7 +3,8 @@ import cv2
 def get_frames():
    video_capture = cv2.VideoCapture(0)
 
-   while True:
+   # wait for 'q' key to be pressed
+   while cv2.waitKey(1) & 0xFF != ord('q'):
       ret, frame = video_capture.read()
 
       grey_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
