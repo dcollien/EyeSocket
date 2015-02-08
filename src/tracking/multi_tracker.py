@@ -53,11 +53,14 @@ class MultiTracker(object):
       return closest_prediction_distance > self.add_threshold
 
    def lookup_filter(self, index):
-      return self.filters[index]
+      try:
+         return self.filters[index]
+      except IndexError:
+         return None
 
-   def remove_filters(self, indexes):
+   def remove_filters(self, filters):
       # filter out predictors (filters)
-      self.filters = [predictor for pi, predictor in enumerate(self.filters) if pi not in frozenset(indexes)]
+      self.filters = [predictor for pi, predictor in enumerate(self.filters) if predictor not in frozenset(filters)]
 
    def predict(self):
       # tell each filter to make a prediction based on current data
@@ -68,8 +71,18 @@ class MultiTracker(object):
       # update each filter with its closest observation
       # uses a KDTree to calculate closest points
 
+      self.missing = set()
+      self.rubbish = set()
+      self.recorded = set()
+      self.assigned = set()
+
       if len(observations) == 0:
-         return [(predictor.id, predictor.last_estimate, tuple(predictor.confidence())) for predictor in self.filters]
+         predictions = []
+         self.missing = set()
+         for i, predictor in enumerate(self.filters):
+            predictions.append((predictor.id, predictor.last_estimate, tuple(predictor.confidence())))
+            self.missing.add(i)
+         return predictions
 
       self.num_tracking = len(self.filters)
 
@@ -88,12 +101,7 @@ class MultiTracker(object):
       distances, nearest = observations.query(self.predictions, distance_upper_bound=self.remove_threshold)
 
       predicted_observations = {}
-
-      self.missing = set()
-      self.rubbish = set()
-      self.recorded = set()
-      self.assigned = set()
-
+      
       size = observations.data.size
 
       # observations assigned to each predictor

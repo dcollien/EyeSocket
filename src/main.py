@@ -6,7 +6,7 @@ from tracking.multi_tracker import MultiTracker
 
 PREDICTION_INTERVAL = 0.5
 
-MAX_CONFIDENCE = 30
+MAX_CONFIDENCE = 10
 
 def main():
    debug_render.init()
@@ -16,7 +16,7 @@ def main():
 
    last_frame = None
 
-   tracker = MultiTracker(remove_threshold=100, add_threshold=60, d=3)
+   tracker = MultiTracker(remove_threshold=100, add_threshold=50, d=3)
 
    time_at_last_prediction = time.process_time()
 
@@ -24,41 +24,47 @@ def main():
       grey_frame = camera.greyscale(frame)
       face_points = face_detector.detect_faces(grey_frame)
 
+      #print(face_points)
+
       predictions = tracker.observe(face_points)
 
       # mark the latest predictions that were 
       # assigned observations as being confident
       for pi in tracker.assigned:
-         predictor_confidence[pi] = MAX_CONFIDENCE
+         predictor = tracker.lookup_filter(pi)
+         #print('assigned', predictor.id)
+         predictor_confidence[predictor] = MAX_CONFIDENCE
 
       # mark rubbish predictions as being less confident
       # and keep track of ones we want to remove
       marked_for_removal = set()
       for pi in tracker.rubbish:
-         if pi in predictor_confidence:
+         predictor = tracker.lookup_filter(pi)
+         if predictor in predictor_confidence:
             # remove 1 confidence points
-            predictor_confidence[pi] -= 1
+            predictor_confidence[predictor] -= 1
 
       # accumulate the points that were missing observations
       missing_faces = []
       for pi in tracker.missing:
-         if pi not in predictor_confidence:
-            predictor_confidence[pi] = MAX_CONFIDENCE
-
-         # remove 1 confidence point
-         predictor_confidence[pi] -= 2
-
          # find the last observation made by this predictor
          predictor = tracker.lookup_filter(pi)
-         last_observation = predictor.last_observation
-         # determine how confident this predictor is
-         confidence_vect = predictor.confidence()
-         variance = (confidence_vect[0] + confidence_vect[1] / 2.0)
-         if last_observation is not None and variance < 0.5:
-            missing_faces.append(last_observation)
 
-      # remove filters that we have lost faith in
-      tracker.remove_filters([pi for pi, confidence in predictor_confidence.items() if confidence <= 0])
+         if predictor not in predictor_confidence:
+            #print('added', predictor.id)
+            predictor_confidence[predictor] = MAX_CONFIDENCE
+
+         # remove 1 confidence point
+         predictor_confidence[predictor] -= 1
+         #print(predictor_confidence[predictor], predictor.id)
+
+         if predictor is not None:
+            last_observation = predictor.last_observation
+            # determine how confident this predictor is
+            confidence_vect = predictor.confidence()
+            variance = (confidence_vect[0] + confidence_vect[1] / 2.0)
+            if last_observation is not None and variance < 0.5:
+               missing_faces.append(last_observation)
 
       # add new filters for ones that weren't assigned
       for observation in tracker.unassigned:
@@ -72,6 +78,9 @@ def main():
          # add observations for each inferred face
          predictions = tracker.observe(inferred_faces)
       
+      # remove filters that we have lost faith in
+      tracker.remove_filters([predictor for predictor, confidence in predictor_confidence.items() if confidence <= 0])
+
       last_frame = grey_frame
 
       # make periodic predictions
