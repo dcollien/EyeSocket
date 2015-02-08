@@ -10,17 +10,18 @@ class MultiTracker(object):
    # add_threshold:     observations must be further away than this distance (pixels)
    #                    to be given their own new predictor
    # d:                 dimensionality (default 2D space), can also be 3D
-   # strikes:           how many times a predictor is flagged as to be discarded (in a row),
-   #                    before it is deleted
-   def __init__(self, remove_threshold=200, add_threshold=50, d=2, strikes=10):
-      self.num_tracking = 0
+   def __init__(self, remove_threshold=100, add_threshold=50, d=2):
       self.filters = []
       self.remove_threshold = remove_threshold
       self.add_threshold = add_threshold
       self.last_id = 0
       self.d = d
-      self.strikes = strikes
-      self.filter_data = {}
+
+      self.missing = set()
+      self.rubbish = set()
+      self.recorded = set()
+      self.assigned = set()
+      self.unassigned = []
 
    def make_filter(self, observation):
       # Create a new filter for this observation
@@ -35,20 +36,12 @@ class MultiTracker(object):
       else:
          raise NotImplementedError
 
-      # Reset the number of "strikes" against this filter
-      self.filter_data[predictor_filter] = {
-         "strikes": self.strikes,
-      }
+      predictor_filter.predict()
 
-   def strike_filter(self, predictor_filter):
-      # make a strike against this filter as not being accurate
-      filter_data = self.filter_data[predictor_filter]
-      filter_data['strikes'] -= 1
-      return filter_data['strikes']
+      return predictor_filter
 
-   def unstrike_filter(self, predictor_filter):
-      # this filter is good again
-      self.filter_data[predictor_filter]['strikes'] = self.strikes
+   def add_filter(self, observation):
+      self.filters.append(self.make_filter(observation))
 
    def is_new_observation(self, observation):
       # ignore observations that have been assigned/recorded
@@ -59,6 +52,13 @@ class MultiTracker(object):
       closest_prediction_distance = np.min(cdist([observation], self.predictions)[0])
       return closest_prediction_distance > self.add_threshold
 
+   def lookup_filter(self, index):
+      return self.filters[index]
+
+   def remove_filters(self, indexes):
+      # filter out predictors (filters)
+      self.filters = [predictor for pi, predictor in enumerate(self.filters) if pi not in frozenset(indexes)]
+
    def predict(self):
       # tell each filter to make a prediction based on current data
       self.predictions = np.array([predictor.predict()[:self.d] for predictor in self.filters])
@@ -68,23 +68,38 @@ class MultiTracker(object):
       # update each filter with its closest observation
       # uses a KDTree to calculate closest points
 
+      if len(observations) == 0:
+         return [(predictor.id, predictor.last_estimate, tuple(predictor.confidence())) for predictor in self.filters]
+
+      self.num_tracking = len(self.filters)
+
       if self.num_tracking == 0:
          # not tracking anything yet, make a bunch of trackers (filters) for each observation
          self.filters = [self.make_filter(observation) for observation in observations]
-
-      self.num_tracking = len(self.filters)
+         self.predict()
 
       # Pack all the observation coordinates into a KDTree
       observations = KDTree(observations)
 
       # nearest is a list of the index of the closest observation for each prediction
       # distances is a list of the distance from each observation to each prediction respectively
+
+      self.predictions = np.array([predictor.last_prediction[:self.d] for predictor in self.filters])
       distances, nearest = observations.query(self.predictions, distance_upper_bound=self.remove_threshold)
 
       predicted_observations = {}
-      dead = set()
+
+      self.missing = set()
+      self.rubbish = set()
       self.recorded = set()
+      self.assigned = set()
+
       size = observations.data.size
+
+      # observations assigned to each predictor
+      assigned_observations = {}
+
+      # assign observations to predictors
       for pi, oi in enumerate(nearest):
          # pi is the index of a prediction in "nearest"
          # oi is the index of the closest observation to that prediction in observations.data
@@ -96,37 +111,36 @@ class MultiTracker(object):
             # for this observation, defaults to (infinity, -1) respectively
             last_prediction_dist, last_pi = predicted_observations.get(oi, (np.inf, -1))
             if distances[pi] < last_prediction_dist:
-               # this prediction is closer than another matched to this observation
-               # delete the other
-               if last_pi >= 0:
-                  dead.add(last_pi)
+               # this prediction is closer to this observation
+               # than any previously assigned prediction
+               # so delete the other, and mark it as rubbish
+               if last_pi >= 0 and pi in assigned_observations:
+                  del assigned_observations[pi]
+                  self.rubbish.add(pi)
 
-               # mix this observation into the filter of this predictor
-               observation = observations.data[oi]
-               self.filters[pi].observe(observation)
+               # assign the observation to this filter
+               assigned_observations[pi] = observations.data[oi]
 
-               # ensure this filter is all good
-               self.unstrike_filter(self.filters[pi])
-
-               # mark this observation as having been recorded by a filter
-               self.recorded.add(tuple(observation))
-
-               # set this one as the closest
+               # remember this one is the closest
                predicted_observations[oi] = (distances[pi], pi)
-            elif self.strike_filter(self.filters[pi]) <= 0:
-               # this prediction is further away than another better one,
-               # delete it
-               dead.add(pi)
+            else:
+               # this prediction is further away than another, better one,
+               # mark it as rubbish
+               self.rubbish.add(pi)
 
-         elif self.strike_filter(self.filters[pi]) <= 0:
-            # after a few strikes, this filter is deleted (too far away from anything)
-            dead.add(pi)
+         elif pi < self.num_tracking:
+            # this filter hasn't got a nearby observation
+            # mark it as missing
+            self.missing.add(pi)
 
-      # filter out predictors (filters) marked as "dead"
-      self.filters = [predictor for pi, predictor in enumerate(self.filters) if pi not in dead]
+      for pi, observation in assigned_observations.items():
+         self.filters[pi].observe(observation)
+         # mark this observation as having been recorded by a filter
+         self.recorded.add(tuple(observation))
+         self.assigned.add(pi)
 
-      # add any new, orphaned observations as new filters
-      self.filters += [self.make_filter(obs) for obs in observations.data if self.is_new_observation(obs)]
+      # collect any new, orphaned observations as new filters
+      self.unassigned = [obs for obs in observations.data if self.is_new_observation(obs)]
 
       # return an identifier and the last position estimate for each prediction
-      return [(predictor.id, predictor.last_estimate) for predictor in self.filters]
+      return [(predictor.id, predictor.last_estimate, tuple(predictor.confidence())) for predictor in self.filters]

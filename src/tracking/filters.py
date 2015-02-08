@@ -7,6 +7,7 @@ class Filter(object):
       self.id = uuid.uuid1()
       self.last_estimate   = None
       self.last_prediction = None
+      self.last_observation = None
 
       self.kalman = cv2.KalmanFilter(dynamic, measurement, control)
       self.reset()
@@ -21,6 +22,9 @@ class Filter(object):
 
    def observe(self, observation):
       raise NotImplementedError
+
+   def confidence(self):
+      return self.kalman.errorCovPost[0]
 
    def __eq__(self, other):
       return self.id == other.id
@@ -70,6 +74,8 @@ class Filter2D(Filter):
       kalman.statePost = .1 * np.random.randn(dps, 1.)
 
    def observe(self, observation):
+      self.last_observation = observation
+
       x, y = observation
       x, y = float(x), float(y)
 
@@ -86,7 +92,7 @@ class Filter3D(Filter):
       # - 6 dynamic parameters
       # - 3 measurement parameters
       # - 0 control parameters
-      super(Filter2D, self).__init__(6, 3, 0)
+      super(Filter3D, self).__init__(6, 3, 0)
 
       if observation is not None:
          self.kalman.statePost = np.array([
@@ -123,6 +129,8 @@ class Filter3D(Filter):
       kalman.statePost = .1 * np.random.randn(dps, 1.)
 
    def observe(self, observation):
+      self.last_observation = observation
+
       x, y, z = observation
       x, y, z = float(x), float(y), float(z)
 
