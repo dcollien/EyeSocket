@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 
 
 def init():
@@ -48,6 +49,18 @@ def draw_features(frame, features):
       cv2.drawChessboardCorners(frame, features['chessboard']['dimensions'], features['chessboard']['corners'], True)
 
    draw_frame(frame)
+
+def draw_flow(img, flow, step=8):
+   h, w = img.shape[:2]
+   y, x = np.mgrid[step/2:h/2:step, step/2:w/2:step].reshape(2,-1)
+   x = x.astype(int)
+   y = y.astype(int)
+   fx, fy = flow[y,x].T
+   lines = np.vstack([x*2, y*2, (x+fx)*2, (y+fy)*2]).T.reshape(-1, 2, 2)
+   lines = np.int32(lines + 0.5)
+   cv2.polylines(img, lines, 0, (0, 255, 0))
+   for (x1, y1), (x2, y2) in lines:
+      cv2.circle(img, (x1, y1), 1, (0, 255, 0), -1)
 
 def wait_for_key(key='q'):
    while chr(cv2.waitKey(1) & 0xFF) != key:

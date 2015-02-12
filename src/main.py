@@ -1,4 +1,4 @@
-import camera, face_detector, template_matching
+import camera, face_detector, template_matching, optic_flow
 import debug_render
 import time
 from tracking.multi_tracker import MultiTracker
@@ -20,7 +20,7 @@ def main():
 
    time_at_last_prediction = time.process_time()
 
-   for frame in camera.get_frames(source='../testing/motinas_multi_face_turning.avi'):
+   for frame in camera.get_frames(source=0):#source='../testing/motinas_multi_face_turning.avi'):
       grey_frame = camera.greyscale(frame)
       face_points = face_detector.detect_faces(grey_frame)
 
@@ -70,6 +70,7 @@ def main():
       for observation in tracker.unassigned:
          tracker.add_filter(observation)
 
+      flow = None
       inferred_faces = []
       if last_frame is not None:
          # try to infer from the previous frame where missing faces might have moved to
@@ -77,6 +78,8 @@ def main():
          
          # add observations for each inferred face
          predictions = tracker.observe(inferred_faces)
+
+         flow = optic_flow.calc_flow(last_frame, grey_frame)
       
       # remove filters that we have lost faith in
       tracker.remove_filters([predictor for predictor, confidence in predictor_confidence.items() if confidence <= 0])
@@ -90,11 +93,15 @@ def main():
          tracker.predict()
          time_at_last_prediction = time.process_time()
 
+      if flow is not None:
+         debug_render.draw_flow(frame, flow)
+
       debug_render.draw_features(frame, {
          'face_points': face_points,
          'guessed_face_points': inferred_faces,
          'predictions': predictions
       })
+
 
 
       
