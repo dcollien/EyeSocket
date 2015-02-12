@@ -2,7 +2,7 @@ import camera, face_detector, template_matching
 import debug_render
 import time
 from tracking.multi_tracker import MultiTracker
-#import transport
+import transport
 
 PREDICTION_INTERVAL = 0.5
 
@@ -59,7 +59,7 @@ def main():
          #print(predictor_confidence[predictor], predictor.id)
 
          if predictor is not None:
-            last_observation = predictor.last_observation
+            last_observation = predictor.last_estimate[:3] # predictor.last_observation
             # determine how confident this predictor is
             confidence_vect = predictor.confidence()
             variance = (confidence_vect[0] + confidence_vect[1] / 2.0)
@@ -96,6 +96,15 @@ def main():
          'predictions': predictions
       })
 
+
+      
+      output = [
+         "{0}\t{1:.2f}\t{2:.2f}\t{3:.2f}\t{4:.2f}\t{5:.2f}\t{6:.2f}\n".format(uuid, vect[0], vect[1], vect[2], confidence[0], confidence[1], confidence[2]) 
+         for uuid, vect, confidence in predictions
+      ]
+
+      transport.send_data(''.join(output))
+      
       
 
       
