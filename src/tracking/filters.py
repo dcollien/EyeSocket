@@ -2,6 +2,43 @@ import cv2
 import numpy as np
 import uuid
 
+# Simplistic filter for testing
+class SimpleFilter(object):
+   def __init__(self, observation, max_distance=500):
+      self.id = uuid.uuid1()
+      self.max_distance = max_distance
+      self._confidence = np.ones_like(observation)
+
+      observation = np.array(observation)
+      self.last_estimate = observation
+      self.last_prediction = observation
+      self.estimate_last_prediction = observation
+
+   def predict(self):
+      velocity = self.last_estimate - self.estimate_last_prediction
+      self.last_prediction = self.last_estimate + velocity
+      self.estimate_last_prediction = self.last_estimate
+      return self.last_prediction
+
+   def observe(self, observation):
+      observation = np.array(observation)
+      self._confidence = np.ones_like(observation)# ((np.ones_like(observation) * self.max_distance) - (self.last_estimate - observation))/self.max_distance
+      self.last_estimate = observation
+      return observation
+
+   def confidence(self):
+      return self._confidence
+
+   def __eq__(self, other):
+      return self.id == other.id
+
+   def __ne__(self, other):
+      return not self.__eq__(other)
+
+   def __hash__(self):
+      return hash(self.id)
+
+# Kalman filter base class
 class Filter(object):
    def __init__(self, dynamic, measurement, control):
       self.id = uuid.uuid1()

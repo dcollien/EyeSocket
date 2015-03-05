@@ -3,7 +3,7 @@ import socket
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 
-FORMAT = 'osc'
+FORMAT = 'udp'
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 5005

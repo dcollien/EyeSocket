@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
+import math
 
+TAU = math.pi * 2
 
 def init():
    cv2.namedWindow('Video', flags=cv2.WINDOW_OPENGL)
@@ -49,6 +51,48 @@ def draw_features(frame, features):
       cv2.drawChessboardCorners(frame, features['chessboard']['dimensions'], features['chessboard']['corners'], True)
 
    draw_frame(frame)
+
+def draw_pose(img, pose, dimensions_delegate):
+   pose['l_forearm'] = TAU/4
+   pose['r_forearm'] = TAU/4
+   
+
+
+   head_x, head_y, head_h = pose['head']
+
+   head_x, head_y, head_h = (int(head_x), int(head_y), int(head_h))
+
+   dimensions = dimensions_delegate(pose['head'])
+
+   neck_length = dimensions['neck']
+   shoulder_length = dimensions['shoulder']
+   forearm_length  = dimensions['forearm']
+
+
+   cv2.circle(img, (head_x, head_y), int(head_h/2.), (0, 255, 0), 2)
+
+   chin  = (head_x, int(head_y + head_h/2.))
+   chest = (chin[0], chin[1] + neck_length)
+   l_shoulder = (chest[0] - shoulder_length, chest[1])
+   r_shoulder = (chest[0] + shoulder_length, chest[1])
+
+   vect_l_elbow = (math.cos(-pose['l_forearm']) * forearm_length, math.sin(-pose['l_forearm']) * forearm_length)
+   l_elbow = (int(l_shoulder[0] - vect_l_elbow[0]), int(l_shoulder[1] - vect_l_elbow[1]))
+
+   vect_r_elbow = (math.cos(pose['r_forearm']) * forearm_length, math.sin(pose['r_forearm']) * forearm_length)
+   r_elbow = (int(r_shoulder[0] + vect_r_elbow[0]), int(r_shoulder[1] + vect_r_elbow[1]))
+
+   left_color   = (255, 0, 0)
+   left_color2  = (128, 0, 0)
+   right_color  = (0, 0, 255)
+   right_color2 = (0, 0, 128)
+
+   cv2.line(img, chin, chest, (0, 255, 0), 2)
+   cv2.line(img, chest, l_shoulder, left_color2, 2)
+   cv2.line(img, chest, r_shoulder, right_color2, 2)
+   cv2.line(img, l_shoulder, l_elbow, left_color, 2)
+   cv2.line(img, r_shoulder, r_elbow, right_color, 2)
+
 
 def draw_flow(img, flow, step=8):
    h, w = img.shape[:2]

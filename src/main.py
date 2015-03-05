@@ -1,4 +1,4 @@
-import camera, face_detector, template_matching, optic_flow
+import camera, face_detector, template_matching, pose_inference
 import debug_render
 import time
 from tracking.multi_tracker import MultiTracker
@@ -6,7 +6,7 @@ import transport
 
 PREDICTION_INTERVAL = 0.5
 
-MAX_CONFIDENCE = 10
+MAX_CONFIDENCE = 5
 
 def main():
    debug_render.init()
@@ -16,7 +16,7 @@ def main():
 
    last_frame = None
 
-   tracker = MultiTracker(remove_threshold=100, add_threshold=50, d=3)
+   tracker = MultiTracker(remove_threshold=100, add_threshold=100, d=3)
 
    time_at_last_prediction = time.process_time()
 
@@ -79,7 +79,7 @@ def main():
          # add observations for each inferred face
          predictions = tracker.observe(inferred_faces)
 
-         flow = optic_flow.calc_flow(last_frame, grey_frame)
+         flow = pose_inference.calc_flow(last_frame, grey_frame)
       
       # remove filters that we have lost faith in
       tracker.remove_filters([predictor for predictor, confidence in predictor_confidence.items() if confidence <= 0])
@@ -89,12 +89,16 @@ def main():
       # make periodic predictions
       if time.process_time() - time_at_last_prediction > PREDICTION_INTERVAL:
          tracker.predict()
-         tracker.predict()
-         tracker.predict()
          time_at_last_prediction = time.process_time()
 
       if flow is not None:
          debug_render.draw_flow(frame, flow)
+
+         if len(predictions) > 0:
+            pred = predictions[0][1]
+            head = (pred[0], pred[1], pred[2])
+            #pose_inference.infer_pose(flow, head)
+            #debug_render.draw_pose(frame, {'head': head}, pose_inference.get_dimensions)
 
       debug_render.draw_features(frame, {
          'face_points': face_points,

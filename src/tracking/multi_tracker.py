@@ -1,4 +1,4 @@
-from tracking.filters import Filter2D, Filter3D
+from tracking.filters import Filter2D, Filter3D, SimpleFilter
 
 import numpy as np
 from scipy.spatial.distance import cdist, pdist
@@ -10,7 +10,9 @@ class MultiTracker(object):
    # add_threshold:     observations must be further away than this distance (pixels)
    #                    to be given their own new predictor
    # d:                 dimensionality (default 2D space), can also be 3D
-   def __init__(self, remove_threshold=100, add_threshold=50, d=2):
+
+   # TODO: make thresholds functions of the prediction (e.g. head size)
+   def __init__(self, remove_threshold=100, add_threshold=50, d=2, useKalman=False):
       self.filters = []
       self.remove_threshold = remove_threshold
       self.add_threshold = add_threshold
@@ -22,19 +24,24 @@ class MultiTracker(object):
       self.recorded = set()
       self.assigned = set()
       self.unassigned = []
+      self.useKalman = useKalman
 
    def make_filter(self, observation):
       # Create a new filter for this observation
 
       predictor_filter = None
-      if self.d == 3:
-         # 3D filter
-         predictor_filter = Filter3D(observation)
-      elif self.d == 2:
-         # 2D filter
-         predictor_filter = Filter2D(observation)
+
+      if self.useKalman:
+         if self.d == 3:
+            # 3D filter
+            predictor_filter = Filter3D(observation)
+         elif self.d == 2:
+            # 2D filter
+            predictor_filter = Filter2D(observation)
+         else:
+            raise NotImplementedError
       else:
-         raise NotImplementedError
+         predictor_filter = SimpleFilter(observation)
 
       predictor_filter.predict()
 
