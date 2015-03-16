@@ -20,7 +20,7 @@ def main():
 
    time_at_last_prediction = time.process_time()
 
-   for frame in camera.get_frames(source=0):#source='../testing/motinas_multi_face_turning.avi'):
+   for frame in camera.get_frames(source=1):#source='../testing/motinas_multi_face_turning.avi'):
       grey_frame = camera.greyscale(frame)
       face_points = face_detector.detect_faces(grey_frame)
 
@@ -46,6 +46,7 @@ def main():
 
       # accumulate the points that were missing observations
       missing_faces = []
+      print('missing', tracker.missing)
       for pi in tracker.missing:
          # find the last observation made by this predictor
          predictor = tracker.lookup_filter(pi)

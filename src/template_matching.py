@@ -2,7 +2,7 @@ import cv2, numpy as np
 
 from scipy.spatial import cKDTree as KDTree
 
-def template_match_features(frame1, frame2, frame_1_features, scale=1.5):
+def template_match_features(frame1, frame2, frame_1_features, frame_1_data=None, scale=1.5):
 	new_positions = []
 
 	w, h = frame1.shape
@@ -23,7 +23,11 @@ def template_match_features(frame1, frame2, frame_1_features, scale=1.5):
 			min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
 			(x, y) = (min_loc[0] + search_x1 + size/2, min_loc[1] + search_y1 + size/2)
 
-			new_positions.append((x, y, size))
+			if frame_1_data is None:
+				new_positions.append((x, y, size))
+			else:
+				frame_1_data[i]['feature'] = (x, y, size)
+				new_positions.append(((x, y, size), frame_1_data[i]))
 		except Exception:
 			pass
 

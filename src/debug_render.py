@@ -11,6 +11,24 @@ def init():
 def draw_frame(frame):
    cv2.imshow('Video', frame)
 
+def faces(frame, faces):
+   for face in faces:
+      mode = face.get('mode')
+      if mode == 'inferred':
+         color = (0, 0, 255)
+      else:
+         color = (255, 0, 0)
+
+      if face.get('alive_for', 0) < 5:
+         color = (0, 0, 0)
+
+      x, y, size = face['feature']
+      cv2.circle(frame, (int(x), int(y)), int(size/2.), color, 2)
+      cv2.putText(frame, str(face['id']), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
+      cv2.putText(frame, str(face['alive_for']), (int(x), int(y + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
+      
+      cv2.putText(frame, str(face['matches_made']), (int(x), int(y + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
+
 def draw_features(frame, features):
    if 'face_rects' in features:
       face_rects = features['face_rects']
