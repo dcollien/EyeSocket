@@ -4,6 +4,7 @@ import time
 import math
 import transport
 import face_detector
+import pose_inference
 import template_matching
 import correspondence
 
@@ -16,10 +17,10 @@ def main():
    face_data = []
    last_frame = None
 
-   for frame in camera.get_frames(source=0):
+   for frame in camera.get_frames(source=0, props=None):
       grey_frame = camera.greyscale(frame)
       new_faces = face_detector.detect_faces(grey_frame)
-
+      
       if len(new_faces) > 0:
          # Calculate corresponding features in adjacent frames
          corresponding_faces = correspondence.correspond(face_data, faces, new_faces)
@@ -57,13 +58,20 @@ def main():
       # Infer where missing faces have moved using template matching
       inferred_faces = []
       inferred_face_data = []
+      flow = None
       if last_frame is not None and len(missing_faces) > 0:
          inferred_features = template_matching.template_match_features(last_frame, grey_frame, missing_faces, missing_faces_data)
-         
+
          if len(inferred_features) > 0:
             inferred_faces, inferred_face_data = zip(*inferred_features)
             faces += inferred_faces
             face_data += inferred_face_data
+
+      if last_frame is not None:
+         flow = pose_inference.calc_flow(last_frame, grey_frame)
+
+      if flow is not None:
+         debug_render.draw_flow(frame, flow)
 
       debug_render.faces(frame, face_data)
       debug_render.draw_frame(frame)

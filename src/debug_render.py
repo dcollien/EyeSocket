@@ -29,6 +29,15 @@ def faces(frame, faces):
       
       cv2.putText(frame, str(face['matches_made']), (int(x), int(y + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
 
+def people(frame, people):
+   color = (0, 255, 0)
+   for person in people:
+      rect, weight = person
+      (x1, y1, x2, y2) = rect
+      cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+      cv2.putText(frame, str(weight), (int(x1), int(y1 + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
+
+
 def draw_features(frame, features):
    if 'face_rects' in features:
       face_rects = features['face_rects']

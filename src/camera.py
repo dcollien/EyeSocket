@@ -34,8 +34,9 @@ def greyscale(img):
 def get_frames(quit_key='q', source=0, props=DEFAULT_CAP_PROPS):
    video_capture = cv2.VideoCapture(source)
    
-   for prop in props:
-      video_capture.set(prop, props[prop])
+   if props:
+      for prop in props:
+         video_capture.set(prop, props[prop])
 
    while True:
       key = cv2.waitKey(1) & 0xFF
