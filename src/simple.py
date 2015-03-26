@@ -4,7 +4,7 @@ import time
 import math
 import transport
 import face_detector
-import pose_inference
+import action_detector
 import template_matching
 import correspondence
 
@@ -17,7 +17,7 @@ def main():
    face_data = []
    last_frame = None
 
-   for frame in camera.get_frames(source=0, props=None):
+   for frame in camera.get_frames(source=0, props=camera.DEFAULT_CAP_PROPS):
       grey_frame = camera.greyscale(frame)
       new_faces = face_detector.detect_faces(grey_frame)
       
@@ -68,7 +68,7 @@ def main():
             face_data += inferred_face_data
 
       if last_frame is not None:
-         flow = pose_inference.calc_flow(last_frame, grey_frame)
+         flow = action_detector.calc_flow(last_frame, grey_frame)
 
       if flow is not None:
          debug_render.draw_flow(frame, flow)

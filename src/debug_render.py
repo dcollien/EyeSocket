@@ -120,7 +120,6 @@ def draw_pose(img, pose, dimensions_delegate):
    cv2.line(img, l_shoulder, l_elbow, left_color, 2)
    cv2.line(img, r_shoulder, r_elbow, right_color, 2)
 
-
 def draw_flow(img, flow, step=8):
    h, w = img.shape[:2]
    y, x = np.mgrid[step/2:h/2:step, step/2:w/2:step].reshape(2,-1)
@@ -129,9 +128,15 @@ def draw_flow(img, flow, step=8):
    fx, fy = flow[y,x].T
    lines = np.vstack([x*2, y*2, (x+fx)*2, (y+fy)*2]).T.reshape(-1, 2, 2)
    lines = np.int32(lines + 0.5)
+
+   threshold = 8
+   threshold = threshold**2
+   lines = [np.array([(x1, y1), (x2, y2)]) for (x1, y1), (x2, y2) in lines if (x2 - x1)**2 + (y2 - y1)**2 > threshold]
+
    cv2.polylines(img, lines, 0, (0, 255, 0))
    for (x1, y1), (x2, y2) in lines:
-      cv2.circle(img, (x1, y1), 1, (0, 255, 0), -1)
+      color = (0, 255, 0)
+      cv2.circle(img, (x1, y1), 2, color, -1)
 
 def wait_for_key(key='q'):
    while chr(cv2.waitKey(1) & 0xFF) != key:
