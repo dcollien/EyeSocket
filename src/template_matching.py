@@ -7,14 +7,18 @@ def template_match_features(frame1, frame2, frame_1_features, frame_1_data=None,
 
 	w, h = frame1.shape
 
+	def constrain(x_val, y_val):
+		return min(w-1, max(0, x_val)), min(h-1, max(0, y_val))
+	
 	for i, feature in enumerate(frame_1_features):
 		(x, y, size) = feature
 
 		try:
-			x1, y1 = max(0, x - size/2), max(0, y - size/2)
-			x2, y2 = min(w-1, x + size/2), min(h-1, y + size/2)
-			search_x1, search_y1 = max(0, x - size * scale), max(0, y - size * scale)
-			search_x2, search_y2 = min(w-1, x + size * scale), min(h-1, y + size * scale)
+			x1, y1 = constrain(x - size/2, y - size/2)
+			x2, y2 = constrain(x + size/2, y + size/2)
+
+			search_x1, search_y1 = constrain(x - size * scale, y - size * scale)
+			search_x2, search_y2 = constrain(x + size * scale, y + size * scale)
 
 			frame_roi  = frame1[y1:y2, x1:x2]
 			search_roi = frame2[search_y1:search_y2, search_x1:search_x2]
