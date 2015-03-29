@@ -13,6 +13,67 @@ def calc_flow(last_frame, curr_frame):
     curr = cv2.resize(curr_frame, new_size)
     return cv2.calcOpticalFlowFarneback(last, curr, None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
+
+def detect_movement_params(flow, rect, reference, height, step=8, threshold=5):
+    x1, y1, x2, y2 = rect
+    w = abs(x2 - x1)
+    h = abs(y2 - y1)
+    y, x = np.mgrid[step/2:h/2:step, step/2:w/2:step].reshape(2,-1)
+    x = x.astype(int)
+    y = y.astype(int)
+    fx, fy = flow[y,x].T
+    lines = np.vstack([x*2, y*2, (x+fx)*2, (y+fy)*2]).T.reshape(-1, 2, 2)
+    lines = np.int32(lines + 0.5)
+
+    threshold = threshold**2  
+    lines = [np.array([(x1, y1), (x2, y2)]) for (x1, y1), (x2, y2) in lines if (x2 - x1)**2 + (y2 - y1)**2 > threshold]
+
+    position = 'top'
+    velocityX = 0
+    velocityY = 0
+    n = 0
+
+    ref_x, ref_y = reference
+    for (x1, y1), (x2, y2) in lines:
+        velocityX += (x2 - x1)
+        velocityY += (y1 - y1)
+
+        if abs(ref_y - y1) < height:
+            position = 'mid'
+        elif (ref_y - y1) > height:
+            position = 'bottom'
+
+        n += 1
+
+    velocity = np.array((velocityX/n, velocityY/n))
+    unit_x, unit_y = velocity / np.linalg.norm(velocity)
+
+    direction = None
+    
+
+    return {
+        'position': position,
+        'velocity': velocity
+    }
+
+
+def detect_movement(size, flow, features):
+
+    movements = [
+        {
+            'left': {
+                'position': 'top', #'mid', 'bottom'
+                'velocity': (x, y)
+            },
+            'right': {
+                # ...
+            }
+        }
+    ]
+
+    return movements
+
+
 def get_dimensions(head):
     head_x, head_y, head_h = (int(head[0]), int(head[1]), int(head[2]))
 
