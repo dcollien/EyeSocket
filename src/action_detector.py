@@ -1,8 +1,56 @@
 import cv2, numpy as np
 import math
+from collections import deque
 
 TAU = math.pi * 2
 PI = math.pi
+
+DIRECTIONS = ['e','ne','n','nw','w','sw','s','se']
+
+
+class DetectionWindow(object):
+    def __init__(self, window_frames=16):
+        self.num_frames = window_frames
+        self.window = deque([])
+        self.detectors = [
+            ('wave_double', self._detect_wave_double),
+            ('wave_left', self._detect_wave_left),
+            ('wave_right', self._detect_wave_right),
+            ('jump', self._detect_jump),
+            #('sway', self._detect_sway),
+            ('energetic', self._detect_energetic),
+            ('still', self._detect_still)
+        ]
+    
+    def add_frame(self, values):
+        if len(self.window) >= self.num_frames:
+            self.window.popleft()
+        self.window.append(values)
+    
+    def detect_event(self):
+        event = None
+        for detector in self.detectors:
+            is_detected, params = detector()
+            if is_detected:
+                return params
+
+    def _detect_wave_left(self):
+        return False, {}
+
+    def _detect_wave_right(self):
+        return False, {}
+
+    def _detect_wave_double(self):
+        return False, {}
+
+    def _detect_jump(self):
+        return False, {}
+
+    def _detect_energetic(self):
+        return False, {}
+
+    def _detect_still(self):
+        return False, {}
 
 
 def calc_flow(last_frame, curr_frame):
@@ -12,7 +60,6 @@ def calc_flow(last_frame, curr_frame):
     last = cv2.resize(last_frame, new_size)
     curr = cv2.resize(curr_frame, new_size)
     return cv2.calcOpticalFlowFarneback(last, curr, None, 0.5, 3, 15, 3, 5, 1.2, 0)
-
 
 def detect_movement_params(flow, rect, reference, height, step=8, threshold=5):
     x1, y1, x2, y2 = rect
@@ -46,16 +93,17 @@ def detect_movement_params(flow, rect, reference, height, step=8, threshold=5):
         n += 1
 
     velocity = np.array((velocityX/n, velocityY/n))
-    unit_x, unit_y = velocity / np.linalg.norm(velocity)
+    vx, vy = velocity
 
-    direction = None
-    
+    angle = np.arctan2(vy, vx);
+
+    direction = np.round(angle/(TAU/8)) * 8
 
     return {
         'position': position,
-        'velocity': velocity
+        'velocity': velocity,
+        'direction': DIRECTIONS[direction]
     }
-
 
 def detect_movement(size, flow, features):
 
