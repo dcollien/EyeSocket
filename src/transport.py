@@ -17,3 +17,8 @@ def send_data(data):
 		client.sendto(data.encode('UTF-8'), (UDP_IP, UDP_PORT))
 	else:
 		print(data.encode('UTF-8'))
+
+def send_features(features):
+	send_data('start_frame\n')
+	for feature in features:
+		send_data('\t'.join([str(item) for item in feature]) + '\n')

@@ -7,6 +7,7 @@ PI = math.pi
 
 DIRECTIONS = ['e','ne','n','nw','w','sw','s','se']
 
+# This module is a work in progress
 
 class DetectionWindow(object):
     def __init__(self, window_frames=16):
@@ -61,6 +62,22 @@ def calc_flow(last_frame, curr_frame):
     curr = cv2.resize(curr_frame, new_size)
     return cv2.calcOpticalFlowFarneback(last, curr, None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
+def group_flow(flow):
+    h, w = img.shape[:2]
+    y, x = np.mgrid[step/2:h/2:step, step/2:w/2:step].reshape(2,-1)
+    x = x.astype(int)
+    y = y.astype(int)
+    fx, fy = flow[y,x].T
+    lines = np.vstack([x*2, y*2, (x+fx)*2, (y+fy)*2]).T.reshape(-1, 2, 2)
+    lines = np.int32(lines + 0.5)
+
+    threshold = 8
+    threshold = threshold**2
+
+    for line in lines:
+        pass
+    lines = [np.array([(x1, y1), (x2, y2)]) for (x1, y1), (x2, y2) in lines if (x2 - x1)**2 + (y2 - y1)**2 > threshold]
+
 def detect_movement_params(flow, rect, reference, height, step=8, threshold=5):
     x1, y1, x2, y2 = rect
     w = abs(x2 - x1)
@@ -105,22 +122,13 @@ def detect_movement_params(flow, rect, reference, height, step=8, threshold=5):
         'direction': DIRECTIONS[direction]
     }
 
-def detect_movement(size, flow, features):
+def detect_actions(size, flow, features):
+    for feature in features:
+        feature['action'] = 'still'
 
-    movements = [
-        {
-            'left': {
-                'position': 'top', #'mid', 'bottom'
-                'velocity': (x, y)
-            },
-            'right': {
-                # ...
-            }
-        }
-    ]
+    # TODO: pass features into movement detection
 
-    return movements
-
+    return features
 
 def get_dimensions(head):
     head_x, head_y, head_h = (int(head[0]), int(head[1]), int(head[2]))

@@ -29,15 +29,6 @@ def faces(frame, faces):
       
       cv2.putText(frame, str(face['matches_made']), (int(x), int(y + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
 
-def people(frame, people):
-   color = (0, 255, 0)
-   for person in people:
-      rect, weight = person
-      (x1, y1, x2, y2) = rect
-      cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-      cv2.putText(frame, str(weight), (int(x1), int(y1 + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
-
-
 def draw_features(frame, features):
    if 'face_rects' in features:
       face_rects = features['face_rects']
@@ -79,6 +70,45 @@ def draw_features(frame, features):
 
    draw_frame(frame)
 
+def draw_flow(img, flow, step=8):
+   h, w = img.shape[:2]
+   y, x = np.mgrid[step/2:h/2:step, step/2:w/2:step].reshape(2,-1)
+   x = x.astype(int)
+   y = y.astype(int)
+   fx, fy = flow[y,x].T
+   lines = np.vstack([x*2, y*2, (x+fx)*2, (y+fy)*2]).T.reshape(-1, 2, 2)
+   lines = np.int32(lines + 0.5)
+
+   # thresholding of the flow
+   threshold = 8
+   threshold = threshold**2
+   lines = [np.array([(x1, y1), (x2, y2)]) for (x1, y1), (x2, y2) in lines if (x2 - x1)**2 + (y2 - y1)**2 > threshold]
+
+   cv2.polylines(img, lines, 0, (0, 255, 0))
+   for (x1, y1), (x2, y2) in lines:
+      color = (0, 255, 0)
+      cv2.circle(img, (x1, y1), 2, color, -1)
+
+def wait_for_key(key='q'):
+   while chr(cv2.waitKey(1) & 0xFF) != key:
+      pass
+
+
+
+
+# Old stuff
+
+"""
+def people(frame, people):
+   color = (0, 255, 0)
+   for person in people:
+      rect, weight = person
+      (x1, y1, x2, y2) = rect
+      cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+      cv2.putText(frame, str(weight), (int(x1), int(y1 + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
+"""
+
+"""
 def draw_pose(img, pose, dimensions_delegate):
    pose['l_forearm'] = TAU/4
    pose['r_forearm'] = TAU/4
@@ -119,25 +149,4 @@ def draw_pose(img, pose, dimensions_delegate):
    cv2.line(img, chest, r_shoulder, right_color2, 2)
    cv2.line(img, l_shoulder, l_elbow, left_color, 2)
    cv2.line(img, r_shoulder, r_elbow, right_color, 2)
-
-def draw_flow(img, flow, step=8):
-   h, w = img.shape[:2]
-   y, x = np.mgrid[step/2:h/2:step, step/2:w/2:step].reshape(2,-1)
-   x = x.astype(int)
-   y = y.astype(int)
-   fx, fy = flow[y,x].T
-   lines = np.vstack([x*2, y*2, (x+fx)*2, (y+fy)*2]).T.reshape(-1, 2, 2)
-   lines = np.int32(lines + 0.5)
-
-   threshold = 8
-   threshold = threshold**2
-   lines = [np.array([(x1, y1), (x2, y2)]) for (x1, y1), (x2, y2) in lines if (x2 - x1)**2 + (y2 - y1)**2 > threshold]
-
-   cv2.polylines(img, lines, 0, (0, 255, 0))
-   for (x1, y1), (x2, y2) in lines:
-      color = (0, 255, 0)
-      cv2.circle(img, (x1, y1), 2, color, -1)
-
-def wait_for_key(key='q'):
-   while chr(cv2.waitKey(1) & 0xFF) != key:
-      pass
+"""

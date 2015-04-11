@@ -8,6 +8,12 @@ def new_data(feature):
       'id': ID
    }
 
+# corresponds two sets of features
+# old_data = data associated with the old features
+# outputs:
+#    features: features that carried over from old to new
+#    feature_data: the respective data for those features (from old_data)
+#    missing_features: features that were in new_features and not in old_features
 def correspond(old_data, old_features, new_features, threshold=100, d=2):
    # trim to dimensional coordinates
    old_features_d = [feature[:d] for feature in old_features]
