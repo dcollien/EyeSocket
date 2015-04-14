@@ -1,8 +1,15 @@
 import cv2
+from time import sleep
 
 DEFAULT_CAP_PROPS = {
-   cv2.CAP_PROP_FRAME_WIDTH: 640,
-   cv2.CAP_PROP_FRAME_HEIGHT: 400,
+   cv2.CAP_PROP_FRAME_WIDTH: 1280,
+   cv2.CAP_PROP_FRAME_HEIGHT: 960,
+   cv2.CAP_PROP_FPS: 25
+}
+
+TESTING_CAP_PROPS = {
+   cv2.CAP_PROP_FRAME_WIDTH: 1280/2,
+   cv2.CAP_PROP_FRAME_HEIGHT: 960/2,
    cv2.CAP_PROP_FPS: 25
 }
 
@@ -31,7 +38,7 @@ def greyscale(img):
    grey_img = cv2.equalizeHist(grey_img)
    return grey_img
 
-def get_frames(quit_key='q', source=0, props=DEFAULT_CAP_PROPS):
+def get_frames(quit_key='q', source=0, props=DEFAULT_CAP_PROPS, crop=None):
    video_capture = cv2.VideoCapture(source)
    
    if props:
@@ -42,6 +49,10 @@ def get_frames(quit_key='q', source=0, props=DEFAULT_CAP_PROPS):
       key = cv2.waitKey(1) & 0xFF
 
       ret, frame = video_capture.read()
+
+      if crop is not None:
+         x1, y1, x2, y2 = crop
+         frame = frame[y1:y2, x1:x2]
 
       if key == ord(quit_key):
          # wait for quit key to be pressed

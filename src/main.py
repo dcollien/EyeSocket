@@ -26,11 +26,14 @@ def pack_feature(feature):
 def main():
    debug_render.init()
 
+   cropping = (0, 240, 1280, 480)
+
    faces = []
    face_data = []
    last_frame = None
 
-   for frame in camera.get_frames(source=0):
+   #for frame in camera.get_frames(source=0, crop=cropping):
+   for frame in camera.get_frames(source=0, props=camera.TESTING_CAP_PROPS):
       grey_frame = camera.greyscale(frame)
       new_faces = face_detector.detect_faces(grey_frame)
       

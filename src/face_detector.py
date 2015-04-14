@@ -8,7 +8,7 @@ def detect_cascade(img, cascade, flags=None, maxSize=(200, 200)):
    else:
       flags = cv2.CASCADE_SCALE_IMAGE
 
-   rects = cascade.detectMultiScale(img, scaleFactor=1.3, minNeighbors=4, minSize=(10, 10), flags=flags, maxSize=maxSize)
+   rects = cascade.detectMultiScale(img, scaleFactor=1.2, minNeighbors=4, minSize=(2, 2), flags=flags, maxSize=maxSize)
    if len(rects) == 0:
       return []
    rects[:,2:] += rects[:,:2]

@@ -28,6 +28,9 @@ def template_match_features(frame1, frame2, frame_1_features, frame_1_data=None,
 			feature_roi  = frame1[y1:y2, x1:x2]
 			search_roi = frame2[search_y1:search_y2, search_x1:search_x2]
 
+			print (y1, y2, x1, x2)
+			print (search_y1, search_y2, search_x1, search_x2)
+			
 			# match the feature image in the search area, and gets its x,y position
 			result = cv2.matchTemplate(search_roi, feature_roi, cv2.TM_SQDIFF_NORMED)
 			min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
