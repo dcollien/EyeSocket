@@ -5,11 +5,13 @@ from scipy.spatial import cKDTree as KDTree
 def template_match_features(frame1, frame2, frame_1_features, frame_1_data=None, scale=1.5):
 	new_positions = []
 
-	w, h = frame1.shape
+	h, w = frame1.shape
 
 	# Constrains an x,y value into the width/height of the current frame
 	def constrain(x_val, y_val):
-		return min(w-1, max(0, x_val)), min(h-1, max(0, y_val))
+		new_x = sorted([0, x_val, w])[1]
+		new_y = sorted([0, y_val, h])[1]
+		return new_x, new_y
 	
 	for i, feature in enumerate(frame_1_features):
 		(x, y, size) = feature
@@ -28,9 +30,6 @@ def template_match_features(frame1, frame2, frame_1_features, frame_1_data=None,
 			feature_roi  = frame1[y1:y2, x1:x2]
 			search_roi = frame2[search_y1:search_y2, search_x1:search_x2]
 
-			print (y1, y2, x1, x2)
-			print (search_y1, search_y2, search_x1, search_x2)
-			
 			# match the feature image in the search area, and gets its x,y position
 			result = cv2.matchTemplate(search_roi, feature_roi, cv2.TM_SQDIFF_NORMED)
 			min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)

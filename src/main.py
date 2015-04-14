@@ -32,8 +32,8 @@ def main():
    face_data = []
    last_frame = None
 
-   #for frame in camera.get_frames(source=0, crop=cropping):
-   for frame in camera.get_frames(source=0, props=camera.TESTING_CAP_PROPS):
+   for frame in camera.get_frames(source=0, crop=cropping):#, props=camera.TESTING_CAP_PROPS):
+   #for frame in camera.get_frames(source=0, props=camera.TESTING_CAP_PROPS):
       grey_frame = camera.greyscale(frame)
       new_faces = face_detector.detect_faces(grey_frame)
       
