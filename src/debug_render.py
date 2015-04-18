@@ -29,6 +29,21 @@ def faces(frame, faces):
       
       cv2.putText(frame, str(face['matches_made']), (int(x), int(y + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
 
+def draw_action_regions(frame, regions):
+   h, w = frame.shape[:2]
+
+   for region in regions:
+      x1, x2, face = region
+      x1, x2 = int(x1), int(x2)
+
+      fx, fy, fs = face['feature']
+      fy = int(fy)
+
+      cv2.line(frame, (x1, 0), (x1, h), (255, 255, 0), 3)
+      cv2.line(frame, (x2, 0), (x2, h), (0, 255, 255), 3)
+      cv2.line(frame, (x1, fy), (x2, fy), (255, 0, 255), 2)
+
+
 def draw_features(frame, features):
    if 'face_rects' in features:
       face_rects = features['face_rects']

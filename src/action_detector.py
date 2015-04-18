@@ -122,12 +122,40 @@ def detect_movement_params(flow, rect, reference, height, step=8, threshold=5):
         'direction': DIRECTIONS[direction]
     }
 
-def detect_actions(size, flow, features):
-    for feature in features:
-        feature['action'] = 'still'
 
-    # TODO: pass features into movement detection
+def get_action_region(face):
+    x, y, size = face['feature']
+    detection_area = 2.3 * size
+    return (x - detection_area, x + detection_area, face)
 
+def fix_overlaps(area_a, area_b):
+    a_x1, a_x2, a_face = area_a
+    b_x1, b_x2, b_face = area_b
+    
+    if b_x1 < a_x2:
+        # regions are overlapping
+        midpoint = (b_x1 + a_x2)/2
+        area_a = (a_x1, midpoint, a_face)
+        area_b = (midpoint, b_x2, b_face)
+
+    return (area_a, area_b)
+
+def is_interesting(face):
+    return face['alive_for'] > 5 and face['matches_made'] < 10
+
+def get_action_regions(features):
+    detection_areas = sorted([get_action_region(face) for face in features if is_interesting(face)], key=lambda region: region[0])
+
+    num_areas = len(detection_areas)
+
+    for i in range(num_areas):
+        if i < num_areas-1:
+            detection_areas[i], detection_areas[i+1] = fix_overlaps(detection_areas[i], detection_areas[i+1])
+
+    return detection_areas
+
+def detect_actions(size, flow, features, action_regions):
+    # TODO
     return features
 
 def get_dimensions(head):

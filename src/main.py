@@ -26,14 +26,14 @@ def pack_feature(feature):
 def main():
    debug_render.init()
 
-   cropping = (0, 240, 1280, 480)
+   cropping = (0, 240, 1280, 600)
 
    faces = []
    face_data = []
    last_frame = None
 
-   for frame in camera.get_frames(source=0, crop=cropping):#, props=camera.TESTING_CAP_PROPS):
-   #for frame in camera.get_frames(source=0, props=camera.TESTING_CAP_PROPS):
+   #for frame in camera.get_frames(source=0, crop=cropping):#, props=camera.TESTING_CAP_PROPS):
+   for frame in camera.get_frames(source=0, props=camera.TESTING_CAP_PROPS):
       grey_frame = camera.greyscale(frame)
       new_faces = face_detector.detect_faces(grey_frame)
       
@@ -96,17 +96,23 @@ def main():
       # render pretty face boxes onto the colored frame
       debug_render.faces(frame, face_data)
 
-      # draw the modified color frame on the screen
-      debug_render.draw_frame(frame)
-
       # keep track of the last frame (for flow and template matching)
       last_frame = grey_frame
 
       # detect movement actions from the optic flow and face positions
-      packed_features = [pack_feature(feature) for feature in action_detector.detect_actions(grey_frame, flow, face_data)]
+      action_regions  = action_detector.get_action_regions(face_data)
+
+      debug_render.draw_action_regions(frame, action_regions)
+
+
+      action_features = action_detector.detect_actions(grey_frame, flow, face_data, action_regions)
+      packed_features = [pack_feature(feature) for feature in action_features]
 
       # send the features over the network
       transport.send_features(packed_features)
+
+      # draw the modified color frame on the screen
+      debug_render.draw_frame(frame)
 
 if __name__ == '__main__':
    main()
