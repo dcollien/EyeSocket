@@ -5,7 +5,7 @@ from collections import deque
 TAU = math.pi * 2
 PI = math.pi
 
-DIRECTIONS = ['e','ne','n','nw','w','sw','s','se']
+DIRECTIONS = ['<<', '^^', '>>' ,'vv']
 
 # This module is a work in progress
 
@@ -31,28 +31,28 @@ class DetectionWindow(object):
     def detect_event(self):
         event = None
         for detector in self.detectors:
-            is_detected, params = detector()
+            detector_name, detector_delegate = detector
+            is_detected = detector_delegate()
             if is_detected:
-                return params
+                return detector_name
 
     def _detect_wave_left(self):
-        return False, {}
+        return False
 
     def _detect_wave_right(self):
-        return False, {}
+        return False
 
     def _detect_wave_double(self):
-        return False, {}
+        return False
 
     def _detect_jump(self):
-        return False, {}
+        return False
 
     def _detect_energetic(self):
-        return False, {}
+        return False
 
     def _detect_still(self):
-        return False, {}
-
+        return True
 
 def calc_flow(last_frame, curr_frame):
     frame_h, frame_w = curr_frame.shape
@@ -70,6 +70,8 @@ def detect_movement_params(flow, rect, bounds, step=8, threshold=5, resolution=0
     y1 = max(0, y1)
     w = min(abs(x2 - x1), max_w - x1 - 1)
     h = min(abs(y2 - y1), max_h - y1 - 1)
+
+    rect = (x1, y1, x1 + w, y1 + h)
 
     y, x = np.mgrid[0:h*resolution:step, 0:w*resolution:step].reshape(2,-1)
     x = (x + x1*resolution).astype(int)
@@ -91,13 +93,18 @@ def detect_movement_params(flow, rect, bounds, step=8, threshold=5, resolution=0
     third_h = h/3
     for (line_x1, line_y1), (line_x2, line_y2) in lines:
         velocityX += (line_x2 - line_x1)
-        velocityY += (line_y1 - line_y1)
+        velocityY += (line_y2 - line_y1)
 
         centerX += line_x1
         centerY += line_y1
 
         n += 1
 
+    if n == 0:
+        n = 1
+
+    centerY /= n
+    centerX /= n
 
     if centerY < y1 + third_h:
         position = 'top'
@@ -106,20 +113,18 @@ def detect_movement_params(flow, rect, bounds, step=8, threshold=5, resolution=0
     else:
         position = 'bottom'
 
-    if n == 0:
-        n = 1
-
     velocity = np.array((velocityX/n, velocityY/n))
     vx, vy = velocity
 
-    angle = np.arctan2(vy, vx);
+    angle = np.arctan2(vy, vx) + PI
 
-    direction = int(np.round(angle/(TAU/8)) * 8)
+    direction = int(np.round(angle/(TAU/4))) % 4
 
     return {
         'position': position,
         'velocity': velocity,
-        'direction': direction,
+        'direction': DIRECTIONS[direction],
+        'n': n,
         'rect': rect
     }
 
@@ -145,7 +150,17 @@ def is_interesting(face):
     return face['alive_for'] > 5 and face['matches_made'] < 10
 
 def get_action_regions(features):
-    detection_areas = sorted([get_action_region(face) for face in features if is_interesting(face)], key=lambda region: region[0])
+    interesting_regions = []
+
+    for face in features:
+        if is_interesting(face):
+            # add region to interesting regions
+            interesting_regions.append(get_action_region(face))
+        else:
+            # remove the detector
+            face['movement'] = None
+
+    detection_areas = sorted(interesting_regions, key=lambda region: region[0])
 
     num_areas = len(detection_areas)
 
@@ -168,10 +183,11 @@ def detect_actions(frame, flow, action_regions):
         left_rect  = (left_x, top_y, mid_x, bottom_y)
         right_rect = (mid_x, top_y, right_x, bottom_y)
 
-        if 'movement' not in face:
+        if 'movement' not in face or face['movement'] is None:
             face['movement'] = DetectionWindow()
 
         face['movement'].add_frame({
+            'head': face['feature'],
             'left':  detect_movement_params(flow, left_rect, (w,h)),
             'right': detect_movement_params(flow, right_rect, (w,h))
         })

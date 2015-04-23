@@ -8,8 +8,11 @@ def init():
    cv2.namedWindow('Video', flags=cv2.WINDOW_OPENGL)
    cv2.resizeWindow('Video', 640, 480)
 
+def flip(frame):
+   return cv2.flip(frame, 1)
+
 def draw_frame(frame):
-   cv2.imshow('Video', cv2.flip(frame, 1))
+   cv2.imshow('Video', frame)
 
 def faces(frame, faces):
    for face in faces:
@@ -29,6 +32,28 @@ def faces(frame, faces):
       
       cv2.putText(frame, str(face['matches_made']), (int(x), int(y + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
 
+      movement = face.get('movement', None)
+
+      if movement is not None:
+         frame_movement = movement.window[-1]
+         right = frame_movement['right']
+         left = frame_movement['left']
+
+         for side in [right, left]:
+            x1, y1, x2, y2 = side['rect']
+            n = side['n']
+            w = int(x2 - x1)
+            color = (255, 0, 0)
+            cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 3)
+
+            if n > 30:
+               color = (255, 255, 0)
+               cv2.putText(frame, str(side['position']), (int(x1 + w/2), int(y + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
+               cv2.putText(frame, str(side['velocity']), (int(x1 + w/2), int(y + 80)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
+               cv2.putText(frame, str(side['direction']), (int(x1 + w/2), int(y + 120)), cv2.FONT_HERSHEY_SIMPLEX, 2.0, color)
+               cv2.putText(frame, str(n), (int(x1 + w/2), int(y + 160)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
+
+
 def draw_action_regions(frame, regions):
    h, w = frame.shape[:2]
 
@@ -42,7 +67,6 @@ def draw_action_regions(frame, regions):
       cv2.line(frame, (x1, 0), (x1, h), (255, 255, 0), 3)
       cv2.line(frame, (x2, 0), (x2, h), (0, 255, 255), 3)
       cv2.line(frame, (x1, fy), (x2, fy), (255, 0, 255), 2)
-
 
 def draw_features(frame, features):
    if 'face_rects' in features:
