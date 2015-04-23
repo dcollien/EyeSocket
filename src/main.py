@@ -103,10 +103,10 @@ def main():
       action_regions  = action_detector.get_action_regions(face_data)
 
       debug_render.draw_action_regions(frame, action_regions)
+      
+      action_detector.detect_actions(grey_frame, flow, action_regions)
 
-
-      action_features = action_detector.detect_actions(grey_frame, flow, face_data, action_regions)
-      packed_features = [pack_feature(feature) for feature in action_features]
+      packed_features = [pack_feature(feature) for feature in face_data]
 
       # send the features over the network
       transport.send_features(packed_features)

@@ -9,7 +9,7 @@ def init():
    cv2.resizeWindow('Video', 640, 480)
 
 def draw_frame(frame):
-   cv2.imshow('Video', frame)
+   cv2.imshow('Video', cv2.flip(frame, 1))
 
 def faces(frame, faces):
    for face in faces:

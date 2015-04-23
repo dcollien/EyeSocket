@@ -62,31 +62,20 @@ def calc_flow(last_frame, curr_frame):
     curr = cv2.resize(curr_frame, new_size)
     return cv2.calcOpticalFlowFarneback(last, curr, None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
-def group_flow(flow):
-    h, w = img.shape[:2]
-    y, x = np.mgrid[step/2:h/2:step, step/2:w/2:step].reshape(2,-1)
-    x = x.astype(int)
-    y = y.astype(int)
-    fx, fy = flow[y,x].T
-    lines = np.vstack([x*2, y*2, (x+fx)*2, (y+fy)*2]).T.reshape(-1, 2, 2)
-    lines = np.int32(lines + 0.5)
-
-    threshold = 8
-    threshold = threshold**2
-
-    for line in lines:
-        pass
-    lines = [np.array([(x1, y1), (x2, y2)]) for (x1, y1), (x2, y2) in lines if (x2 - x1)**2 + (y2 - y1)**2 > threshold]
-
-def detect_movement_params(flow, rect, reference, height, step=8, threshold=5):
+def detect_movement_params(flow, rect, bounds, step=8, threshold=5, resolution=0.5):
+    max_w, max_h = bounds
     x1, y1, x2, y2 = rect
-    w = abs(x2 - x1)
-    h = abs(y2 - y1)
-    y, x = np.mgrid[step/2:h/2:step, step/2:w/2:step].reshape(2,-1)
-    x = x.astype(int)
-    y = y.astype(int)
+
+    x1 = max(0, x1)
+    y1 = max(0, y1)
+    w = min(abs(x2 - x1), max_w - x1 - 1)
+    h = min(abs(y2 - y1), max_h - y1 - 1)
+
+    y, x = np.mgrid[0:h*resolution:step, 0:w*resolution:step].reshape(2,-1)
+    x = (x + x1*resolution).astype(int)
+    y = (y + y1*resolution).astype(int)
     fx, fy = flow[y,x].T
-    lines = np.vstack([x*2, y*2, (x+fx)*2, (y+fy)*2]).T.reshape(-1, 2, 2)
+    lines = np.vstack([x/resolution, y/resolution, (x+fx)/resolution, (y+fy)/resolution]).T.reshape(-1, 2, 2)
     lines = np.int32(lines + 0.5)
 
     threshold = threshold**2  
@@ -95,31 +84,43 @@ def detect_movement_params(flow, rect, reference, height, step=8, threshold=5):
     position = 'top'
     velocityX = 0
     velocityY = 0
+    centerX = 0
+    centerY = 0
     n = 0
 
-    ref_x, ref_y = reference
-    for (x1, y1), (x2, y2) in lines:
-        velocityX += (x2 - x1)
-        velocityY += (y1 - y1)
+    third_h = h/3
+    for (line_x1, line_y1), (line_x2, line_y2) in lines:
+        velocityX += (line_x2 - line_x1)
+        velocityY += (line_y1 - line_y1)
 
-        if abs(ref_y - y1) < height:
-            position = 'mid'
-        elif (ref_y - y1) > height:
-            position = 'bottom'
+        centerX += line_x1
+        centerY += line_y1
 
         n += 1
+
+
+    if centerY < y1 + third_h:
+        position = 'top'
+    elif centerY < y1 + third_h * 2:
+        position = 'mid'
+    else:
+        position = 'bottom'
+
+    if n == 0:
+        n = 1
 
     velocity = np.array((velocityX/n, velocityY/n))
     vx, vy = velocity
 
     angle = np.arctan2(vy, vx);
 
-    direction = np.round(angle/(TAU/8)) * 8
+    direction = int(np.round(angle/(TAU/8)) * 8)
 
     return {
         'position': position,
         'velocity': velocity,
-        'direction': DIRECTIONS[direction]
+        'direction': direction,
+        'rect': rect
     }
 
 
@@ -131,7 +132,7 @@ def get_action_region(face):
 def fix_overlaps(area_a, area_b):
     a_x1, a_x2, a_face = area_a
     b_x1, b_x2, b_face = area_b
-    
+
     if b_x1 < a_x2:
         # regions are overlapping
         midpoint = (b_x1 + a_x2)/2
@@ -154,10 +155,30 @@ def get_action_regions(features):
 
     return detection_areas
 
-def detect_actions(size, flow, features, action_regions):
-    # TODO
-    return features
+def detect_actions(frame, flow, action_regions):
+    h, w = frame.shape[:2]
 
+    for region in action_regions:
+        left_x, right_x, face = region
+        x, y, face_size = face['feature']
+        mid_x = x
+        top_y = y - (face_size * 2)
+        bottom_y = y + (face_size * 2)
+
+        left_rect  = (left_x, top_y, mid_x, bottom_y)
+        right_rect = (mid_x, top_y, right_x, bottom_y)
+
+        if 'movement' not in face:
+            face['movement'] = DetectionWindow()
+
+        face['movement'].add_frame({
+            'left':  detect_movement_params(flow, left_rect, (w,h)),
+            'right': detect_movement_params(flow, right_rect, (w,h))
+        })
+
+
+"""
+# trying to infer pose from a skeleton template
 def get_dimensions(head):
     head_x, head_y, head_h = (int(head[0]), int(head[1]), int(head[2]))
 
@@ -219,7 +240,6 @@ def infer_pose(flow, head):
     return {
         'l_forearm': l_best_value * shoulder_length
     }
-
-
+"""
 
 
