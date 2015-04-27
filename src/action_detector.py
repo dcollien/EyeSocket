@@ -62,7 +62,7 @@ def calc_flow(last_frame, curr_frame):
     curr = cv2.resize(curr_frame, new_size)
     return cv2.calcOpticalFlowFarneback(last, curr, None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
-def detect_movement_params(flow, rect, bounds, step=8, threshold=5, resolution=0.5):
+def detect_movement_in_rect(flow, rect, bounds, step=8, threshold=5, resolution=0.5):
     max_w, max_h = bounds
     x1, y1, x2, y2 = rect
 
@@ -90,7 +90,6 @@ def detect_movement_params(flow, rect, bounds, step=8, threshold=5, resolution=0
     centerY = 0
     n = 0
 
-    third_h = h/3
     for (line_x1, line_y1), (line_x2, line_y2) in lines:
         velocityX += (line_x2 - line_x1)
         velocityY += (line_y2 - line_y1)
@@ -104,7 +103,32 @@ def detect_movement_params(flow, rect, bounds, step=8, threshold=5, resolution=0
         n = 1
 
     centerY /= n
-    centerX /= n
+    centerX /= n 
+
+    velocity = np.array((velocityX/n, velocityY/n))
+
+    return {
+        'velocity': velocity,
+        'center': (centerX, centerY),
+        'n': n
+    }
+
+def detect_movement_params(flow, rect, bounds, face_v):
+    params = detect_movement_in_rect(flow, rect, bounds)
+    
+    max_w, max_h = bounds
+    x1, y1, x2, y2 = rect
+
+    x1 = max(0, x1)
+    y1 = max(0, y1)
+    w = min(abs(x2 - x1), max_w - x1 - 1)
+    h = min(abs(y2 - y1), max_h - y1 - 1)
+
+    centerX, centerY = params['center']
+    velocity = params['velocity']
+    n = params['n']
+
+    third_h = h/3
 
     if centerY < y1 + third_h:
         position = 'top'
@@ -113,8 +137,8 @@ def detect_movement_params(flow, rect, bounds, step=8, threshold=5, resolution=0
     else:
         position = 'bottom'
 
-    velocity = np.array((velocityX/n, velocityY/n))
     vx, vy = velocity
+    f_vx, f_vy = face_v
 
     angle = np.arctan2(vy, vx) + PI
 
@@ -122,7 +146,7 @@ def detect_movement_params(flow, rect, bounds, step=8, threshold=5, resolution=0
 
     return {
         'position': position,
-        'velocity': velocity,
+        'velocity': (vx - f_vx, vy - f_vy),
         'direction': DIRECTIONS[direction],
         'n': n,
         'rect': rect
@@ -186,10 +210,13 @@ def detect_actions(frame, flow, action_regions):
         if 'movement' not in face or face['movement'] is None:
             face['movement'] = DetectionWindow()
 
+        face_rect = (int(x-face_size/2.0), int(y-face_size/2.0), int(x+face_size/2.0), int(y+face_size/2.0))
+        face_v = detect_movement_in_rect(flow, face_rect, (w,h))['velocity']
+
         face['movement'].add_frame({
             'head': face['feature'],
-            'left':  detect_movement_params(flow, left_rect, (w,h)),
-            'right': detect_movement_params(flow, right_rect, (w,h))
+            'left':  detect_movement_params(flow, left_rect, (w,h), face_v),
+            'right': detect_movement_params(flow, right_rect, (w,h), face_v)
         })
 
 

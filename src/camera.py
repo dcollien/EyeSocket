@@ -2,8 +2,8 @@ import cv2
 from time import sleep
 
 DEFAULT_CAP_PROPS = {
-   cv2.CAP_PROP_FRAME_WIDTH: 1280,
-   cv2.CAP_PROP_FRAME_HEIGHT: 960,
+   cv2.CAP_PROP_FRAME_WIDTH: 1400,#1280,
+   cv2.CAP_PROP_FRAME_HEIGHT: 1080,#960,
    cv2.CAP_PROP_FPS: 25
 }
 
@@ -45,6 +45,11 @@ def get_frames(quit_key='q', source=0, props=DEFAULT_CAP_PROPS, crop=None):
       for prop in props:
          video_capture.set(prop, props[prop])
 
+      w, h = (props[cv2.CAP_PROP_FRAME_WIDTH], props[cv2.CAP_PROP_FRAME_HEIGHT])
+   else:
+      w, h = 1280, 960
+
+
    while True:
       key = cv2.waitKey(1) & 0xFF
 
@@ -52,6 +57,7 @@ def get_frames(quit_key='q', source=0, props=DEFAULT_CAP_PROPS, crop=None):
 
       if crop is not None:
          x1, y1, x2, y2 = crop
+         x1, y1, x2, y2 = int(x1 * w), int(y1 * h), int(x2 * w), int(y2 * h)
          frame = frame[y1:y2, x1:x2]
 
       if key == ord(quit_key):

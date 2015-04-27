@@ -2,13 +2,13 @@ import cv2, numpy as np
 
 FACE_CASCADE = cv2.CascadeClassifier('face_frontal.xml')
 
-def detect_cascade(img, cascade, flags=None, maxSize=(200, 200)):
+def detect_cascade(img, cascade, flags=None, maxSize=(200, 200), minSize=(10, 10)):
    if flags:
       flags = flags | cv2.CASCADE_SCALE_IMAGE
    else:
       flags = cv2.CASCADE_SCALE_IMAGE
 
-   rects = cascade.detectMultiScale(img, scaleFactor=1.2, minNeighbors=4, minSize=(2, 2), flags=flags, maxSize=maxSize)
+   rects = cascade.detectMultiScale(img, scaleFactor=1.2, minNeighbors=4, minSize=minSize, flags=flags, maxSize=maxSize)
    if len(rects) == 0:
       return []
    rects[:,2:] += rects[:,:2]
