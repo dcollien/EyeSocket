@@ -10,8 +10,15 @@ import correspondence
 
 MAX_MATCHES = 50
 
-def pack_feature(feature):
+def pack_feature(feature, dimensions):
    x, y, size = feature['feature']
+
+   w, h = dimensions
+
+   x /= w
+   y /= h
+
+   y = (1.0 - y)
 
    mode = 0
    if feature.get('mode') == 'inferred':
@@ -36,6 +43,8 @@ def main():
    #for frame in camera.get_frames(source=0, props=camera.TESTING_CAP_PROPS):
       grey_frame = camera.greyscale(frame)
       new_faces = face_detector.detect_faces(grey_frame)
+
+      frame_h, frame_w = grey_frame.shape[:2]
       
       if len(new_faces) > 0:
          # Calculate corresponding features in adjacent frames
@@ -106,7 +115,7 @@ def main():
       
       action_detector.detect_actions(grey_frame, flow, action_regions)
 
-      packed_features = [pack_feature(feature) for feature in face_data]
+      packed_features = [pack_feature(feature, (frame_w, frame_h)) for feature in face_data]
 
       # send the features over the network
       transport.send_features(packed_features)
