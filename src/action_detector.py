@@ -115,7 +115,7 @@ def detect_movement_in_rect(flow, rect, bounds, step=8, threshold=5, resolution=
 
 def detect_movement_params(flow, rect, bounds, face_v):
     params = detect_movement_in_rect(flow, rect, bounds)
-    
+
     max_w, max_h = bounds
     x1, y1, x2, y2 = rect
 
@@ -140,13 +140,16 @@ def detect_movement_params(flow, rect, bounds, face_v):
     vx, vy = velocity
     f_vx, f_vy = face_v
 
+    vx -= f_vx
+    vy -= f_vy
+
     angle = np.arctan2(vy, vx) + PI
 
     direction = int(np.round(angle/(TAU/4))) % 4
 
     return {
         'position': position,
-        'velocity': (vx - f_vx, vy - f_vy),
+        'velocity': (vx, vy),
         'direction': DIRECTIONS[direction],
         'n': n,
         'rect': rect
