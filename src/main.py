@@ -9,6 +9,7 @@ import template_matching
 import correspondence
 
 MAX_MATCHES = 50
+USE_SCALING_ALTERNATION = True # try and find faces of various sizes in alternate frames (speedup)
 
 def pack_feature(feature, dimensions):
    x, y, size = feature['feature']
@@ -33,16 +34,35 @@ def pack_feature(feature, dimensions):
 def main():
    debug_render.init()
 
-   cropping = (0, 0.2, 1.0, 0.8)
+   cropping = (0, 0.3, 1.0, 0.6)
 
    faces = []
    face_data = []
    last_frame = None
 
-   #for frame in camera.get_frames(source=0, crop=cropping):#, props=camera.TESTING_CAP_PROPS):
-   for frame in camera.get_frames(source=0, props=camera.TESTING_CAP_PROPS):
+   if USE_SCALING_ALTERNATION:
+      # generate which face sizes to look for in each frame
+      face_size_ranges = []
+      face_drop = 50
+      max_size = 250
+      min_size = 50
+      face_scale = (max_size/float(max_size-face_drop/2))
+      while max_size > min_size:
+         face_size_ranges.append([(max_size, max_size), (max_size-face_drop, max_size-face_drop)])
+         max_size -= face_drop
+   else:
+      face_size_ranges = [(200, 200), (10, 10)]
+      face_scale = 1.2
+
+   frame_index = 0
+
+   for frame in camera.get_frames(source=1, crop=cropping):#, props=camera.TESTING_CAP_PROPS):
+   #for frame in camera.get_frames(source=0, props=camera.TESTING_CAP_PROPS):
       grey_frame = camera.greyscale(frame)
-      new_faces = face_detector.detect_faces(grey_frame)
+
+      max_face_size, min_face_size = face_size_ranges[frame_index]
+
+      new_faces = face_detector.detect_faces(grey_frame, scale_factor=face_scale, max_size=max_face_size, min_size=min_face_size)
 
       frame_h, frame_w = grey_frame.shape[:2]
       
@@ -124,6 +144,8 @@ def main():
 
       # draw the modified color frame on the screen
       debug_render.draw_frame(frame)
+
+      frame_index = (frame_index + 1) % len(face_size_ranges)
 
 if __name__ == '__main__':
    main()

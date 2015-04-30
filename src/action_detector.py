@@ -7,7 +7,11 @@ PI = math.pi
 
 DIRECTIONS = ['left', 'up', 'right' ,'down']
 
-# This module is a work in progress
+WAVE_VEL = 5
+NUM_OSC_FOR_WAVE = 3
+SIZE_MUL = 1.45
+SIZE_DIFF = 10
+ENERGETIC_THRES = 75
 
 class DetectionWindow(object):
     def __init__(self, window_frames=16):
@@ -45,7 +49,7 @@ class DetectionWindow(object):
             new_dir = roi['direction']
             vx, vy  = roi['velocity']
 
-            if roi['n'] > 5 and (vx**2 + vy**2) > 5**2:
+            if roi['n'] > 5 and (vx**2 + vy**2) > WAVE_VEL**2:
                 if direction is None:
                     direction = new_dir
 
@@ -55,10 +59,10 @@ class DetectionWindow(object):
         return oscillations
 
     def _detect_wave_left(self):
-        return self._get_num_waves('left') > 3
+        return self._get_num_waves('left') > NUM_OSC_FOR_WAVE
 
     def _detect_wave_right(self):
-        return self._get_num_waves('right') > 3
+        return self._get_num_waves('right') > NUM_OSC_FOR_WAVE
 
     def _detect_wave_double(self):
         return self._detect_wave_left() and self._detect_wave_right()
@@ -89,7 +93,7 @@ class DetectionWindow(object):
 
         diff = (largest - smallest)
 
-        return ((highest - lowest) > (av_s * 1.45)) and (diff < 10)
+        return ((highest - lowest) > (av_s * SIZE_MUL)) and (diff < SIZE_DIFF)
 
     def _detect_energetic(self):
         energy = 0
@@ -115,7 +119,7 @@ class DetectionWindow(object):
 
         energy /= n
 
-        return energy > 75
+        return energy > ENERGETIC_THRES
 
     def _detect_still(self):
         return True
@@ -241,7 +245,7 @@ def fix_overlaps(area_a, area_b):
     return (area_a, area_b)
 
 def is_interesting(face):
-    return face['alive_for'] > 8 and face['matches_made'] < 5
+    return face['alive_for'] > 5 and face['matches_made'] < 5
 
 def get_action_regions(features):
     interesting_regions = []
@@ -291,71 +295,3 @@ def detect_actions(frame, flow, action_regions):
         })
 
         face['action'] = face['movement'].detect_event()
-
-
-"""
-# trying to infer pose from a skeleton template
-def get_dimensions(head):
-    head_x, head_y, head_h = (int(head[0]), int(head[1]), int(head[2]))
-
-    return {
-        'neck': int(head_h * 0.4),
-        'shoulder': int(head_h * 1.1),
-        'forearm': int(head_h * 1.8)
-    }
-
-def sample_line(flow, start, angle, length, resolution=0.5):
-    sample_sum = 0
-    pts_sampled = 0
-    for i in range(100):
-        sample_length = math.randint(0, length)
-        sample_x = math.cos(angle) * sample_length
-        sample_y = math.sin(angle) * sample_length
-        flow_y, flow_x = flow[int(sample_y * resolution), int(sample_x * resolution)]
-        sample_sum += (flow_y + flow_x)/2.
-        pts_sampled += 1
-
-    return sample_sum/pts_sampled
-
-def infer_pose(flow, head):
-    dimensions = get_dimensions(head)
-
-    head_x, head_y, head_h = head
-    head_x, head_y, head_h = int(head_x), int(head_y), int(head_h)
-
-    neck_length = dimensions['neck']
-    shoulder_length = dimensions['shoulder']
-    forearm_length  = dimensions['forearm']
-
-    chin       = (head_x, int(head_y + head_h/2.))
-    chest      = (chin[0], chin[1] + neck_length)
-    l_shoulder = (chest[0] - shoulder_length, chest[1])
-    r_shoulder = (chest[0] + shoulder_length, chest[1])
-
-    segments = 16
-    sweep = TAU/4
-
-    l_best_angle = sweep
-    l_best_value = 0    
-    r_best_angle = sweep
-    r_best_value = 0
-
-    for i in range(segments):
-        sweep += PI/segments
-        l_sample = sample_line(flow, l_shoulder, sweep, shoulder_length)
-        r_sample = sample_line(flow, r_shoulder, sweep, shoulder_length)
-        if l_sample > l_best_value:
-            l_best_angle = sweep
-            l_best_value = l_sample
-        if r_sample > r_best_value:
-            r_best_angle = sweep
-            r_best_value = r_sample
-
-    lx, ly = l_shoulder
-
-    return {
-        'l_forearm': l_best_value * shoulder_length
-    }
-"""
-
-
