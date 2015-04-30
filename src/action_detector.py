@@ -68,8 +68,11 @@ class DetectionWindow(object):
         lowest  = float("inf")
         av_s = 0
         n = 0
+        sizes = []
         for frame in self.window:
             fx, fy, fs = frame['head']
+
+            sizes.append(fs)
 
             av_s += fs
             n += 1
@@ -81,7 +84,12 @@ class DetectionWindow(object):
 
         av_s /= n
 
-        return (highest - lowest) > (av_s * 1.45)
+        largest  = max(sizes)
+        smallest = min(sizes)
+
+        diff = (largest - smallest)
+
+        return ((highest - lowest) > (av_s * 1.45)) and (diff < 10)
 
     def _detect_energetic(self):
         energy = 0
