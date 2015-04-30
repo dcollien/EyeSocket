@@ -32,27 +32,6 @@ def faces(frame, faces):
       
       cv2.putText(frame, str(face['matches_made']), (int(x), int(y + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
 
-      movement = face.get('movement', None)
-
-      if movement is not None:
-         frame_movement = movement.window[-1]
-         right = frame_movement['right']
-         left = frame_movement['left']
-
-         for side in [right, left]:
-            x1, y1, x2, y2 = side['rect']
-            n = side['n']
-            w = int(x2 - x1)
-            color = (255, 0, 0)
-            cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 3)
-
-            if n > 30:
-               color = (255, 255, 0)
-               cv2.putText(frame, str(side['position']), (int(x1 + w/2), int(y + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
-               cv2.putText(frame, str(side['velocity']), (int(x1 + w/2), int(y + 80)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
-               cv2.putText(frame, str(side['direction']), (int(x1 + w/2), int(y + 120)), cv2.FONT_HERSHEY_SIMPLEX, 2.0, color)
-               cv2.putText(frame, str(n), (int(x1 + w/2), int(y + 160)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
-
 
 def draw_action_regions(frame, regions):
    h, w = frame.shape[:2]
@@ -67,6 +46,46 @@ def draw_action_regions(frame, regions):
       cv2.line(frame, (x1, 0), (x1, h), (255, 255, 0), 3)
       cv2.line(frame, (x2, 0), (x2, h), (0, 255, 255), 3)
       cv2.line(frame, (x1, fy), (x2, fy), (255, 0, 255), 2)
+
+
+def draw_actions(frame, regions):
+   for region in regions:
+      x1, x2, face = region
+      fx, fy, fs = face['feature']
+      action = face['action']
+
+      movement = face.get('movement', None)
+
+      if movement is not None:
+         frame_movement = movement.window[-1]
+         right = frame_movement['right']
+         left = frame_movement['left']
+
+         for side in [right, left]:
+            x1, y1, x2, y2 = side['rect']
+            n = side['n']
+            w = int(x2 - x1)
+            color = (255, 0, 0)
+            cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 3)
+
+            vx, vy = side['velocity']
+
+            if n > 30 and (vx**2 + vy**2) > 8**2:
+               color = (255, 255, 0)
+               cv2.putText(frame, str(side['position']), (int(x1 + w/2), int(fy + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
+               cv2.putText(frame, str(side['velocity']), (int(x1 + w/2), int(fy + 80)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
+               cv2.putText(frame, str(side['direction']), (int(x1 + w/2), int(fy + 120)), cv2.FONT_HERSHEY_SIMPLEX, 2.0, color)
+               cv2.putText(frame, str(n), (int(x1 + w/2), int(fy + 160)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
+
+               px, py = side['center']
+
+               px, py = int(px), int(py)
+               vx, vy = int(vx), int(vy)
+
+               cv2.line(frame, (px, py), (px - vx * 4, py - vy * 4), (255, 0, 255), 6)
+               cv2.circle(frame, (px, py), int(fs/4), (255, 0, 255), -1)
+
+      cv2.putText(frame, action, (int(fx), int(fy - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
 def draw_features(frame, features):
    if 'face_rects' in features:

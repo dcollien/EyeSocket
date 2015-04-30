@@ -120,6 +120,8 @@ def main():
       # send the features over the network
       transport.send_features(packed_features)
 
+      debug_render.draw_actions(frame, action_regions)
+
       # draw the modified color frame on the screen
       debug_render.draw_frame(frame)
 

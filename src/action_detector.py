@@ -148,6 +148,7 @@ def detect_movement_params(flow, rect, bounds, face_v):
     direction = int(np.round(angle/(TAU/4))) % 4
 
     return {
+        'center': params['center'],
         'position': position,
         'velocity': (vx, vy),
         'direction': DIRECTIONS[direction],
@@ -221,6 +222,8 @@ def detect_actions(frame, flow, action_regions):
             'left':  detect_movement_params(flow, left_rect, (w,h), face_v),
             'right': detect_movement_params(flow, right_rect, (w,h), face_v)
         })
+
+        face['action'] = face['movement'].detect_event()
 
 
 """
