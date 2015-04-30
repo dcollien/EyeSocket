@@ -61,6 +61,7 @@ def draw_actions(frame, regions):
          right = frame_movement['right']
          left = frame_movement['left']
 
+         s_color = (0, 255, 255)
          for side in [right, left]:
             x1, y1, x2, y2 = side['rect']
             n = side['n']
@@ -70,11 +71,11 @@ def draw_actions(frame, regions):
 
             vx, vy = side['velocity']
 
-            if n > 30 and (vx**2 + vy**2) > 8**2:
+            if n > 5 and (vx**2 + vy**2) > 5**2:
                color = (255, 255, 0)
                cv2.putText(frame, str(side['position']), (int(x1 + w/2), int(fy + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
                cv2.putText(frame, str(side['velocity']), (int(x1 + w/2), int(fy + 80)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
-               cv2.putText(frame, str(side['direction']), (int(x1 + w/2), int(fy + 120)), cv2.FONT_HERSHEY_SIMPLEX, 2.0, color)
+               cv2.putText(frame, str(side['direction']), (int(x1 + w/2), int(fy + 120)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
                cv2.putText(frame, str(n), (int(x1 + w/2), int(fy + 160)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
 
                px, py = side['center']
@@ -82,8 +83,10 @@ def draw_actions(frame, regions):
                px, py = int(px), int(py)
                vx, vy = int(vx), int(vy)
 
-               cv2.line(frame, (px, py), (px - vx * 4, py - vy * 4), (255, 0, 255), 6)
-               cv2.circle(frame, (px, py), int(fs/4), (255, 0, 255), -1)
+               cv2.line(frame, (px, py), (px - vx * 4, py - vy * 4), s_color, 6)
+               cv2.circle(frame, (px, py), int(fs/4), s_color, -1)
+
+            s_color = (255, 0, 255)
 
       cv2.putText(frame, action, (int(fx), int(fy - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 

@@ -5,7 +5,7 @@ from collections import deque
 TAU = math.pi * 2
 PI = math.pi
 
-DIRECTIONS = ['<<', '^^', '>>' ,'vv']
+DIRECTIONS = ['left', 'up', 'right' ,'down']
 
 # This module is a work in progress
 
@@ -14,10 +14,10 @@ class DetectionWindow(object):
         self.num_frames = window_frames
         self.window = deque([])
         self.detectors = [
+            ('jump', self._detect_jump),
             ('wave_double', self._detect_wave_double),
             ('wave_left', self._detect_wave_left),
             ('wave_right', self._detect_wave_right),
-            ('jump', self._detect_jump),
             #('sway', self._detect_sway),
             ('energetic', self._detect_energetic),
             ('still', self._detect_still)
@@ -36,20 +36,78 @@ class DetectionWindow(object):
             if is_detected:
                 return detector_name
 
+    def _get_num_waves(self, side):
+        oscillations = 0
+        direction = None
+
+        for frame in self.window:
+            roi = frame[side]
+            new_dir = roi['direction']
+            vx, vy  = roi['velocity']
+
+            if roi['n'] > 5 and (vx**2 + vy**2) > 5**2:
+                if direction is None:
+                    direction = new_dir
+
+                if direction != new_dir and new_dir in ['left', 'right']:
+                    oscillations += 1
+
+        return oscillations
+
     def _detect_wave_left(self):
-        return False
+        return self._get_num_waves('left') > 3
 
     def _detect_wave_right(self):
-        return False
+        return self._get_num_waves('right') > 3
 
     def _detect_wave_double(self):
-        return False
+        return self._detect_wave_left() and self._detect_wave_right()
 
     def _detect_jump(self):
-        return False
+        highest = 0
+        lowest  = float("inf")
+        av_s = 0
+        n = 0
+        for frame in self.window:
+            fx, fy, fs = frame['head']
+
+            av_s += fs
+            n += 1
+
+            if fy > highest:
+                highest = fy
+            elif fy < lowest:
+                lowest = fy
+
+        av_s /= n
+
+        return (highest - lowest) > (av_s * 1.45)
 
     def _detect_energetic(self):
-        return False
+        energy = 0
+        n = 0
+
+        for frame in self.window:
+            right = frame['right']
+            left = frame['left']
+            vx, vy = frame['head_v']
+
+            if right['n'] > 5:
+                rvx, rvy = right['velocity']
+                energy += (rvx**2 + rvy**2)
+                n += 1
+
+            if left['n'] > 5:
+                rvx, rvy = left['velocity']
+                energy += (rvx**2 + rvy**2)
+                n += 1
+
+            energy += vx**2 + vy**2
+            n += 1
+
+        energy /= n
+
+        return energy > 75
 
     def _detect_still(self):
         return True
@@ -159,8 +217,8 @@ def detect_movement_params(flow, rect, bounds, face_v):
 
 def get_action_region(face):
     x, y, size = face['feature']
-    detection_area = 2.3 * size
-    return (x - detection_area, x + detection_area, face)
+    detection_area_x = 3.0 * size
+    return (x - detection_area_x, x + detection_area_x, face)
 
 def fix_overlaps(area_a, area_b):
     a_x1, a_x2, a_face = area_a
@@ -175,7 +233,7 @@ def fix_overlaps(area_a, area_b):
     return (area_a, area_b)
 
 def is_interesting(face):
-    return face['alive_for'] > 5 and face['matches_made'] < 10
+    return face['alive_for'] > 8 and face['matches_made'] < 5
 
 def get_action_regions(features):
     interesting_regions = []
@@ -219,6 +277,7 @@ def detect_actions(frame, flow, action_regions):
 
         face['movement'].add_frame({
             'head': face['feature'],
+            'head_v': face_v,
             'left':  detect_movement_params(flow, left_rect, (w,h), face_v),
             'right': detect_movement_params(flow, right_rect, (w,h), face_v)
         })
