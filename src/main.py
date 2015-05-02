@@ -34,7 +34,7 @@ def pack_feature(feature, dimensions):
 
    action = feature.get('action', 'still')
 
-   is_interesting = 1 if feature.get('has_moved', False) else 0
+   is_interesting = 1 if action_detector.is_interesting(feature) else 0
 
    return (feature['id'], x, y, size, mode, action, faces_matched, guesses_made, vx, vy, is_interesting)
 

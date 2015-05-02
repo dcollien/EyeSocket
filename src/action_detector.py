@@ -260,7 +260,7 @@ def fix_overlaps(area_a, area_b):
     return (area_a, area_b)
 
 def is_interesting(face):
-    return face['alive_for'] > 5 and face['matches_made'] < 5 and face.get('has_moved', False)
+    return face['alive_for'] > 5 and face['matches_made'] < 10 and face.get('has_moved', False)
 
 def get_action_regions(features):
     interesting_regions = []
@@ -326,4 +326,12 @@ def detect_actions(frame, flow, action_regions):
                 'right': None
             })
 
-        face['action'] = face['movement'].detect_event()
+        action = face['movement'].detect_event()
+        last_action = face.get('last_movement', 'still')
+
+        if action != last_action:
+            face['action'] = last_action
+        else:
+            face['action'] = action
+
+        face['last_movement'] = action
