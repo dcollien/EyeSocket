@@ -9,7 +9,7 @@ import template_matching
 import correspondence
 
 MAX_MATCHES = 50
-USE_SCALING_ALTERNATION = True # try and find faces of various sizes in alternate frames (speedup)
+USE_SCALING_ALTERNATION = False # try and find faces of various sizes in alternate frames (speedup)
 
 def pack_feature(feature, dimensions):
    x, y, size = feature['feature']
@@ -51,13 +51,13 @@ def main():
          face_size_ranges.append([(max_size, max_size), (max_size-face_drop, max_size-face_drop)])
          max_size -= face_drop
    else:
-      face_size_ranges = [(200, 200), (10, 10)]
+      face_size_ranges = [[(200, 200), (10, 10)]]
       face_scale = 1.2
 
    frame_index = 0
 
-   for frame in camera.get_frames(source=1, crop=cropping):#, props=camera.TESTING_CAP_PROPS):
-   #for frame in camera.get_frames(source=0, props=camera.TESTING_CAP_PROPS):
+   #for frame in camera.get_frames(source=1, crop=cropping):#, props=camera.TESTING_CAP_PROPS):
+   for frame in camera.get_frames(source=0, props=camera.TESTING_CAP_PROPS):
       grey_frame = camera.greyscale(frame)
 
       max_face_size, min_face_size = face_size_ranges[frame_index]
