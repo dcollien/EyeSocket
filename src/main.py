@@ -84,7 +84,10 @@ def main(args):
    try:
       cam_args['source'] = int(args[-1])
    except:
-      cam_args['source'] = 0
+      if args[-1].startswith('file:'):
+         cam_args['source'] = args[-1][5:]
+      else:
+         cam_args['source'] = 0
 
    for frame in camera.get_frames(**cam_args):
       grey_frame = camera.greyscale(frame)
