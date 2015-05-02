@@ -12,7 +12,7 @@ def detect_cascade(img, cascade, scale_factor, max_size, min_size):
    return rects
 
 def detect_faces(frame, scale_factor=1.2, max_size=(200, 200), min_size=(10, 10)):
-   max_height = 50
+   max_height = 25
 
    # Capture frame-by-frame
    frame_h, frame_w = frame.shape

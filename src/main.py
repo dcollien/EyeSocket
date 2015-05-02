@@ -9,7 +9,7 @@ import template_matching
 import correspondence
 
 MAX_MATCHES = 50
-USE_SCALING_ALTERNATION = False # try and find faces of various sizes in alternate frames (speedup)
+USE_SCALING_ALTERNATION = True # try and find faces of various sizes in alternate frames (speedup)
 
 def pack_feature(feature, dimensions):
    x, y, size = feature['feature']
@@ -25,11 +25,12 @@ def pack_feature(feature, dimensions):
    if feature.get('mode') == 'inferred':
       mode = 1
 
-   matches = feature['matches_made']
-
+   guesses_made = feature['matches_made']
+   faces_matched = feature['alive_for']
+   
    action = feature.get('action', 'still')
-
-   return (feature['id'], x, y, size, mode, action, feature['alive_for'], matches)
+   
+   return (feature['id'], x, y, size, mode, action, faces_matched, guesses_made)
 
 def main():
    debug_render.init()
@@ -45,7 +46,7 @@ def main():
       face_size_ranges = []
       face_drop = 50
       max_size = 250
-      min_size = 50
+      min_size = 25
       face_scale = (max_size/float(max_size-face_drop/2))
       while max_size > min_size:
          face_size_ranges.append([(max_size, max_size), (max_size-face_drop, max_size-face_drop)])

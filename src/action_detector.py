@@ -45,7 +45,11 @@ class DetectionWindow(object):
         direction = None
 
         for frame in self.window:
-            roi = frame[side]
+            roi = frame.get(side, None)
+            
+            if roi is None:
+                continue
+
             new_dir = roi['direction']
             vx, vy  = roi['velocity']
 
@@ -100,9 +104,12 @@ class DetectionWindow(object):
         n = 0
 
         for frame in self.window:
-            right = frame['right']
-            left = frame['left']
-            vx, vy = frame['head_v']
+            right = frame.get('right', None)
+            left = frame.get('left', None)
+            vx, vy = frame.get('head_v', (None, None))
+
+            if right is None or left is None:
+                continue
 
             if right['n'] > 5:
                 rvx, rvy = right['velocity']
@@ -116,6 +123,9 @@ class DetectionWindow(object):
 
             energy += vx**2 + vy**2
             n += 1
+
+        if n == 0:
+            n = 1
 
         energy /= n
 
@@ -284,14 +294,19 @@ def detect_actions(frame, flow, action_regions):
         if 'movement' not in face or face['movement'] is None:
             face['movement'] = DetectionWindow()
 
-        face_rect = (int(x-face_size/2.0), int(y-face_size/2.0), int(x+face_size/2.0), int(y+face_size/2.0))
-        face_v = detect_movement_in_rect(flow, face_rect, (w,h))['velocity']
+        try:
+            face_rect = (int(x-face_size/2.0), int(y-face_size/2.0), int(x+face_size/2.0), int(y+face_size/2.0))
+            face_v = detect_movement_in_rect(flow, face_rect, (w,h))['velocity']
 
-        face['movement'].add_frame({
-            'head': face['feature'],
-            'head_v': face_v,
-            'left':  detect_movement_params(flow, left_rect, (w,h), face_v),
-            'right': detect_movement_params(flow, right_rect, (w,h), face_v)
-        })
+            face['movement'].add_frame({
+                'head': face['feature'],
+                'head_v': face_v,
+                'left':  detect_movement_params(flow, left_rect, (w,h), face_v),
+                'right': detect_movement_params(flow, right_rect, (w,h), face_v)
+            })
+        except:
+            face['movement'].add_frame({
+                'head': face['feature']
+            })
 
         face['action'] = face['movement'].detect_event()
