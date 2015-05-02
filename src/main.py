@@ -7,6 +7,7 @@ import face_detector
 import action_detector
 import template_matching
 import correspondence
+import sys
 
 import cv2
 
@@ -38,7 +39,7 @@ def pack_feature(feature, dimensions):
 
    return (feature['id'], x, y, size, mode, action, faces_matched, guesses_made, vx, vy, is_interesting)
 
-def main():
+def main(args):
    debug_render.init()
 
    cropping = (0, 0.3, 1.0, 0.6)
@@ -63,8 +64,29 @@ def main():
 
    frame_index = 0
 
-   #for frame in camera.get_frames(source=1, crop=cropping):#, props=camera.TESTING_CAP_PROPS):
-   for frame in camera.get_frames(source=1, props=camera.TESTING_CAP_PROPS):
+   cam_args = {}
+
+   run_headless = False
+
+   if len(args) > 0:
+      if args[0].startswith('debug'):
+         cam_args = {
+            'props': camera.TESTING_CAP_PROPS
+         }
+      else:
+         cam_args = {
+            'crop': cropping
+         }
+
+      if args[0] == 'headless':
+         run_headless = True
+
+   try:
+      cam_args['source'] = int(args[-1])
+   except:
+      cam_args['source'] = 0
+
+   for frame in camera.get_frames(**cam_args):
       grey_frame = camera.greyscale(frame)
 
       max_face_size, min_face_size = face_size_ranges[frame_index]
@@ -143,12 +165,13 @@ def main():
          # calculate the optic flow of the frame, at a low sample rate
          flow = action_detector.calc_flow(last_frame, grey_frame)
 
-      if flow is not None:
+      if flow is not None and not run_headless:
          # render a pretty flow onto the colored frame
          debug_render.draw_flow(frame, flow)
 
-      # render pretty face boxes onto the colored frame
-      debug_render.faces(frame, face_data)
+      if not run_headless:
+         # render pretty face boxes onto the colored frame
+         debug_render.faces(frame, face_data)
 
       # keep track of the last frame (for flow and template matching)
       last_frame = grey_frame
@@ -160,7 +183,8 @@ def main():
       for face in face_data:
          face['v'] = action_detector.get_face_velocity(frame, flow, face)
 
-      debug_render.draw_action_regions(frame, action_regions)
+      if not run_headless:
+         debug_render.draw_action_regions(frame, action_regions)
       
       action_detector.detect_actions(grey_frame, flow, action_regions)
 
@@ -169,12 +193,13 @@ def main():
       # send the features over the network
       transport.send_features(packed_features)
 
-      debug_render.draw_actions(frame, action_regions)
+      if not run_headless:
+         debug_render.draw_actions(frame, action_regions)
 
-      # draw the modified color frame on the screen
-      debug_render.draw_frame(frame)
+         # draw the modified color frame on the screen
+         debug_render.draw_frame(frame)
 
       frame_index = (frame_index + 1) % len(face_size_ranges)
 
 if __name__ == '__main__':
-   main()
+   main(sys.argv[1:])
