@@ -7,7 +7,9 @@ PI = math.pi
 
 DIRECTIONS = ['left', 'up', 'right' ,'down']
 
-WAVE_VEL = 5
+WAVE_VEL = 0.05
+
+
 NUM_OSC_FOR_WAVE = 3
 SIZE_MUL = 1.45
 SIZE_DIFF = 10
@@ -53,7 +55,10 @@ class DetectionWindow(object):
             new_dir = roi['direction']
             vx, vy  = roi['velocity']
 
-            if roi['n'] > 5 and (vx**2 + vy**2) > WAVE_VEL**2:
+            fx, fy, fs = frame['head']
+            wave_vel = WAVE_VEL * fs
+
+            if roi['n'] > 5 and (vx**2 + vy**2) > wave_vel**2:
                 if direction is None:
                     direction = new_dir
 
@@ -255,7 +260,7 @@ def fix_overlaps(area_a, area_b):
     return (area_a, area_b)
 
 def is_interesting(face):
-    return face['alive_for'] > 5 and face['matches_made'] < 5
+    return face['alive_for'] > 5 and face['matches_made'] < 5 and face.get('has_moved', False)
 
 def get_action_regions(features):
     interesting_regions = []
@@ -278,6 +283,17 @@ def get_action_regions(features):
 
     return detection_areas
 
+def get_face_velocity(frame, flow, face):
+    h, w = frame.shape[:2]
+    x, y, face_size = face['feature']
+    face_rect = (int(x-face_size/2.0), int(y-face_size/2.0), int(x+face_size/2.0), int(y+face_size/2.0))
+    try:
+        face_v = detect_movement_in_rect(flow, face_rect, (w,h))['velocity']
+    except:
+        face_v = (0,0)
+
+    return face_v
+
 def detect_actions(frame, flow, action_regions):
     h, w = frame.shape[:2]
 
@@ -294,10 +310,9 @@ def detect_actions(frame, flow, action_regions):
         if 'movement' not in face or face['movement'] is None:
             face['movement'] = DetectionWindow()
 
-        try:
-            face_rect = (int(x-face_size/2.0), int(y-face_size/2.0), int(x+face_size/2.0), int(y+face_size/2.0))
-            face_v = detect_movement_in_rect(flow, face_rect, (w,h))['velocity']
+        face_v = face['v']
 
+        try:
             face['movement'].add_frame({
                 'head': face['feature'],
                 'head_v': face_v,
@@ -306,7 +321,9 @@ def detect_actions(frame, flow, action_regions):
             })
         except:
             face['movement'].add_frame({
-                'head': face['feature']
+                'head': face['feature'],
+                'left': None,
+                'right': None
             })
 
         face['action'] = face['movement'].detect_event()

@@ -61,6 +61,9 @@ def draw_actions(frame, regions):
          right = frame_movement['right']
          left = frame_movement['left']
 
+         if right is None or left is None:
+            continue
+
          s_color = (0, 255, 255)
          for side in [right, left]:
             x1, y1, x2, y2 = side['rect']

@@ -8,6 +8,8 @@ import action_detector
 import template_matching
 import correspondence
 
+import cv2
+
 MAX_MATCHES = 50
 USE_SCALING_ALTERNATION = True # try and find faces of various sizes in alternate frames (speedup)
 
@@ -27,10 +29,14 @@ def pack_feature(feature, dimensions):
 
    guesses_made = feature['matches_made']
    faces_matched = feature['alive_for']
-   
+
+   vx, vy = feature.get('v', (0,0))
+
    action = feature.get('action', 'still')
-   
-   return (feature['id'], x, y, size, mode, action, faces_matched, guesses_made)
+
+   is_interesting = 1 if feature.get('has_moved', False) else 0
+
+   return (feature['id'], x, y, size, mode, action, faces_matched, guesses_made, vx, vy, is_interesting)
 
 def main():
    debug_render.init()
@@ -58,7 +64,7 @@ def main():
    frame_index = 0
 
    #for frame in camera.get_frames(source=1, crop=cropping):#, props=camera.TESTING_CAP_PROPS):
-   for frame in camera.get_frames(source=0, props=camera.TESTING_CAP_PROPS):
+   for frame in camera.get_frames(source=1, props=camera.TESTING_CAP_PROPS):
       grey_frame = camera.greyscale(frame)
 
       max_face_size, min_face_size = face_size_ranges[frame_index]
@@ -80,6 +86,24 @@ def main():
 
       # Reset properties for detected faces
       for face_data_point in face_data:
+
+         if not face_data_point.get('has_moved', False):
+            has_moved = False
+            if 'last_detected_as' in face_data_point:
+               curr_x, curr_y, curr_s = face_data_point['feature']
+               last_x, last_y, last_s = face_data_point['last_detected_as']
+               if ((last_x - curr_x)**2 + (last_y - curr_y)**2) > 10:
+                  has_moved = True
+
+            # see if this face has ever moved
+            is_moving = False
+            if 'v' in face_data_point:
+               vx, vy = face_data_point['v']
+               if (vx ** 2 + vy ** 2) > 3:
+                  is_moving = True
+
+            face_data_point['has_moved'] = (has_moved and is_moving)
+
          face_data_point.update({
             'mode': 'detected',
             'last_detected_as': face_data_point['feature'],
@@ -131,6 +155,10 @@ def main():
 
       # detect movement actions from the optic flow and face positions
       action_regions  = action_detector.get_action_regions(face_data)
+
+      # calculate face velocities
+      for face in face_data:
+         face['v'] = action_detector.get_face_velocity(frame, flow, face)
 
       debug_render.draw_action_regions(frame, action_regions)
       
