@@ -22,3 +22,4 @@ def send_features(features):
 	send_data('start_frame\n')
 	for feature in features:
 		send_data('\t'.join([str(item) for item in feature]) + '\n')
+	send_data('end_frame\n')

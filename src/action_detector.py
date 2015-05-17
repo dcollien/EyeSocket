@@ -7,13 +7,13 @@ PI = math.pi
 
 DIRECTIONS = ['left', 'up', 'right' ,'down']
 
-WAVE_VEL = 0.05
+WAVE_VEL = 0.04
 
 
 NUM_OSC_FOR_WAVE = 3
 SIZE_MUL = 1.45
 SIZE_DIFF = 10
-ENERGETIC_THRES = 75
+ENERGETIC_THRES = 50
 
 class DetectionWindow(object):
     def __init__(self, window_frames=16):
@@ -134,7 +134,7 @@ class DetectionWindow(object):
 
         energy /= n
 
-        return energy > ENERGETIC_THRES
+        return n > 5 and energy > ENERGETIC_THRES
 
     def _detect_still(self):
         return True
@@ -147,7 +147,7 @@ def calc_flow(last_frame, curr_frame):
     curr = cv2.resize(curr_frame, new_size)
     return cv2.calcOpticalFlowFarneback(last, curr, None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
-def detect_movement_in_rect(flow, rect, bounds, step=8, threshold=5, resolution=0.5):
+def detect_movement_in_rect(flow, rect, bounds, step=8, threshold=3, resolution=0.5):
     max_w, max_h = bounds
     x1, y1, x2, y2 = rect
 

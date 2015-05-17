@@ -1,0 +1,32 @@
+{
+	"headless": false,
+	"use_scaling_alternation": false,
+	"max_matches": 50,
+	"cameras": [{
+			"source": 2,
+			"resolution": [640, 480],
+			"crop": null,
+			"offset": [-320, -65],
+			"blend": null,
+			"z-index": 0,
+			"juggle": true
+		},
+		{
+			"source": 3,
+			"resolution": [640, 480],
+			"crop": null,
+			"offset": [0, 0],
+			"blend": [30, 610],
+			"z-index": 1,
+			"juggle": false
+		},
+		{
+			"source": 0,
+			"resolution": [640, 480],
+			"crop": null,
+			"offset": [320, -40],
+			"blend": null,
+			"z-index": 0,
+			"juggle": true
+	}]
+}

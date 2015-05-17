@@ -10,9 +10,10 @@ import correspondence
 import sys
 
 import cv2
+import copy
 
-MAX_MATCHES = 50
-USE_SCALING_ALTERNATION = True # try and find faces of various sizes in alternate frames (speedup)
+import json
+
 
 def pack_feature(feature, dimensions):
    x, y, size = feature['feature']
@@ -39,14 +40,17 @@ def pack_feature(feature, dimensions):
 
    return (feature['id'], x, y, size, mode, action, faces_matched, guesses_made, vx, vy, is_interesting)
 
-def main(args):
-   debug_render.init()
+def main(config):
 
-   cropping = (0, 0.3, 1.0, 0.6)
+   MAX_MATCHES = config['max_matches']
+   USE_SCALING_ALTERNATION = config['use_scaling_alternation']
+   show_debug = not config['headless']
 
    faces = []
    face_data = []
    last_frame = None
+
+   cameras = camera.set_up_cameras(config['cameras'])
 
    if USE_SCALING_ALTERNATION:
       # generate which face sizes to look for in each frame
@@ -66,31 +70,25 @@ def main(args):
 
    cam_args = {}
 
-   run_headless = False
+   if show_debug:
+      debug_render.init()
 
-   if len(args) > 0:
-      if args[0].startswith('debug'):
-         cam_args = {
-            'props': camera.TESTING_CAP_PROPS
-         }
-      else:
-         cam_args = {
-            'crop': cropping
-         }
+   juggle_index = 0
 
-      if args[0] == 'headless':
-         run_headless = True
+   while True:
+      key = cv2.waitKey(1) & 0xFF
+      if key == ord('q'):
+         # wait for quit key to be pressed
+         break
 
-   try:
-      cam_args['source'] = int(args[-1])
-   except:
-      if args[-1].startswith('file:'):
-         cam_args['source'] = args[-1][5:]
-      else:
-         cam_args['source'] = 0
+      grey_frame = camera.get_blended_frame(cameras)#), use_juggled=(juggle_index == 0)) #camera.greyscale(frame)
 
-   for frame in camera.get_frames(**cam_args):
-      grey_frame = camera.greyscale(frame)
+      juggle_index = (juggle_index + 1) % 10
+
+      frame = grey_frame
+
+      if show_debug:
+         debug_frame = copy.copy(frame)
 
       max_face_size, min_face_size = face_size_ranges[frame_index]
 
@@ -168,13 +166,13 @@ def main(args):
          # calculate the optic flow of the frame, at a low sample rate
          flow = action_detector.calc_flow(last_frame, grey_frame)
 
-      if flow is not None and not run_headless:
+      if flow is not None and show_debug:
          # render a pretty flow onto the colored frame
-         debug_render.draw_flow(frame, flow)
+         debug_render.draw_flow(debug_frame, flow)
 
-      if not run_headless:
+      if show_debug:
          # render pretty face boxes onto the colored frame
-         debug_render.faces(frame, face_data)
+         debug_render.faces(debug_frame, face_data)
 
       # keep track of the last frame (for flow and template matching)
       last_frame = grey_frame
@@ -186,8 +184,8 @@ def main(args):
       for face in face_data:
          face['v'] = action_detector.get_face_velocity(frame, flow, face)
 
-      if not run_headless:
-         debug_render.draw_action_regions(frame, action_regions)
+      if show_debug:
+         debug_render.draw_action_regions(debug_frame, action_regions)
       
       action_detector.detect_actions(grey_frame, flow, action_regions)
 
@@ -196,13 +194,24 @@ def main(args):
       # send the features over the network
       transport.send_features(packed_features)
 
-      if not run_headless:
-         debug_render.draw_actions(frame, action_regions)
+      if show_debug:
+         debug_render.draw_actions(debug_frame, action_regions)
 
          # draw the modified color frame on the screen
-         debug_render.draw_frame(frame)
+         debug_render.draw_frame(debug_frame)
 
       frame_index = (frame_index + 1) % len(face_size_ranges)
 
+   camera.release_cams(cameras)
+
 if __name__ == '__main__':
-   main(sys.argv[1:])
+   args = sys.argv[1:]
+
+   if len(args) > 0:
+      conf_file = args[0]
+   else:
+      conf_file = 'config.json'
+
+   with open(conf_file) as config_data:
+      config = json.loads(config_data.read())
+      main(config)
