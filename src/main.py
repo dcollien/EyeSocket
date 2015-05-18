@@ -73,19 +73,14 @@ def main(config):
    if show_debug:
       debug_render.init()
 
-   juggle_index = 0
-
    while True:
       key = cv2.waitKey(1) & 0xFF
       if key == ord('q'):
          # wait for quit key to be pressed
          break
 
-      grey_frame = camera.get_blended_frame(cameras)#), use_juggled=(juggle_index == 0)) #camera.greyscale(frame)
-
-      juggle_index = (juggle_index + 1) % 10
-
-      frame = grey_frame
+      frame = cv2.flip(camera.get_blended_frame(cameras), 1)
+      grey_frame = camera.greyscale(frame)
 
       if show_debug:
          debug_frame = copy.copy(frame)

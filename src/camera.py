@@ -3,8 +3,8 @@ import numpy as np
 from time import sleep
 
 DEFAULT_CAP_PROPS = {
-   cv2.CAP_PROP_FRAME_WIDTH: 1400,#1280,
-   cv2.CAP_PROP_FRAME_HEIGHT: 1080,#960,
+   cv2.CAP_PROP_FRAME_WIDTH: 1280,
+   cv2.CAP_PROP_FRAME_HEIGHT: 960,
    cv2.CAP_PROP_FPS: 25
 }
 
@@ -59,11 +59,8 @@ def set_up_cameras(camera_config):
          cv2.CAP_PROP_FRAME_HEIGHT: h
       }
 
-      if not cam_props.get('juggle', True):
-         cam_src = init_cam(cam_props, props)
-         cam_props['capture'] = cam_src
-
-      cam_props['props'] = props
+      cam_src = init_cam(cam_props, props)
+      cam_props['capture'] = cam_src
 
 
    cams = sorted(camera_config, key=lambda x: x.get('z-index', 0))
@@ -96,12 +93,7 @@ def get_blended_frame(cam_setup, use_juggled=False):
    w, h = cam_setup['dimensions']
    min_x, min_y = cam_setup['offset']
 
-   frame = np.zeros((h, w))
-
-   if use_juggled:
-      for cam_props in cameras:
-         if not cam_props.get('juggle', False):
-            cam_props['capture'].release()
+   frame = np.zeros((h, w, 3))
 
    for cam_props in cameras:
       cam_x, cam_y = cam_props['offset']
@@ -110,26 +102,9 @@ def get_blended_frame(cam_setup, use_juggled=False):
       cam_x -= min_x
       cam_y -= min_y
 
-      is_captured = False
-
-      if use_juggled:
-         cam_src = init_cam(cam_props, cam_props['props'])
-         is_captured, cam_frame = cam_src.read()
-         cam_frame = cam_frame.copy()
-         cam_props['last_frame'] = cam_frame
-
-         if cam_props.get('juggle', False):
-            cam_src.release()
-         else:
-            cam_props['capture'] = cam_src
-      elif not cam_props.get('juggle', False):
-         is_captured, cam_frame = cam_props['capture'].read()
-      elif 'last_frame' in cam_props:
-         is_captured = True
-         cam_frame = cam_props['last_frame']
+      is_captured, cam_frame = cam_props['capture'].read()
 
       if is_captured:
-         cam_frame = greyscale(cam_frame)
          frame[cam_y:(cam_y+cam_h), cam_x:(cam_x+cam_w)] = cam_frame
 
    return np.array(frame, dtype='uint8')
