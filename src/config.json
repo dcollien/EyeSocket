@@ -4,7 +4,7 @@
 	"max_matches": 50,
 	"cameras": [
 		{
-			"source": 0,
+			"source": 1,
 			"resolution": [640, 480],
 			"crop": null,
 			"offset": [0, 0],

@@ -88,7 +88,7 @@ def init_cam(cam_props, cv_props):
       cam_src.set(prop, cv_props[prop])
    return cam_src
 
-def get_blended_frame(cam_setup, use_juggled=False):
+def get_blended_frame(cam_setup):
    cameras = cam_setup['cameras']
    w, h = cam_setup['dimensions']
    min_x, min_y = cam_setup['offset']
@@ -105,7 +105,21 @@ def get_blended_frame(cam_setup, use_juggled=False):
       is_captured, cam_frame = cam_props['capture'].read()
 
       if is_captured:
-         frame[cam_y:(cam_y+cam_h), cam_x:(cam_x+cam_w)] = cam_frame
+
+         if 'blend' in cam_props and cam_props['blend'] is not None:
+            blend_start, blend_end, blend_step = cam_props['blend']
+            mask_size = (blend_end - blend_start)
+            mask = np.arange(mask_size)/float(mask_size)
+
+            if blend_step < 0:
+               mask = mask[::-1]
+
+            mask = np.array([[x,x,x] for x in mask])
+
+            cam_frame[:, blend_start:blend_end, :] *= mask
+
+
+         frame[cam_y:(cam_y+cam_h), cam_x:(cam_x+cam_w)] += cam_frame
 
    return np.array(frame, dtype='uint8')
 
