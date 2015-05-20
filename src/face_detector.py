@@ -11,7 +11,9 @@ def detect_cascade(img, cascade, scale_factor, max_size, min_size):
    rects[:,2:] += rects[:,:2]
    return rects
 
-def is_bright_enough(min_brightness, frame, x1, y1, x2, y2):
+def is_bright_enough(min_brightness, frame, rect):
+   x1, y1, x2, y2 = rect
+
    num_samples = 50
    val = 0
    for i in range(num_samples):
@@ -19,9 +21,13 @@ def is_bright_enough(min_brightness, frame, x1, y1, x2, y2):
       y = np.random.randint(y1, y2)
       val += frame[y, x]
 
-   return (val/num_samples) > min_brightness
+   av_brightness = (val/num_samples)
 
-def detect_faces(frame, scale_factor=1.2, max_size=(200, 200), min_size=(10, 10), min_brightness=5):
+   print(av_brightness, min_brightness, av_brightness > min_brightness)
+
+   return (av_brightness > min_brightness)
+
+def detect_faces(frame, scale_factor=1.2, max_size=(200, 200), min_size=(10, 10), min_brightness=35):
    max_height = 25
 
    # Capture frame-by-frame
@@ -29,7 +35,7 @@ def detect_faces(frame, scale_factor=1.2, max_size=(200, 200), min_size=(10, 10)
 
    # detect frontal faces
    face_rects = detect_cascade(frame, FACE_CASCADE, scale_factor=scale_factor, max_size=max_size, min_size=min_size)
-   face_rects = [(x1, y2, x2, y2) for x1, y1, x2, y2 in face_rects if is_bright_enough(min_brightness, frame, x1, y1, x2, y2)]
+   face_rects = [rect for rect in face_rects if is_bright_enough(min_brightness, frame, rect)]
    face_points = [[float((x1+x2)/2.),float((y1+y2)/2.),float((np.abs(y2-y1)))] for x1, y1, x2, y2 in face_rects]
 
    face_points = [(x, y, h) for x, y, h in face_points if h > max_height]

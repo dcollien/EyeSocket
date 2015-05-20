@@ -15,6 +15,8 @@ SIZE_MUL = 1.45
 SIZE_DIFF = 10
 ENERGETIC_THRES = 50
 
+MOVEMENT_THRES = 35
+
 class DetectionWindow(object):
     def __init__(self, window_frames=16):
         self.num_frames = window_frames
@@ -67,14 +69,24 @@ class DetectionWindow(object):
 
         return oscillations
 
+    def _movement_x(self):
+        start = self.window[0]
+        end = self.window[-1]
+
+        start_x, start_y, start_s = start['head']
+        end_x, end_y, end_s = end['head']
+
+        return abs(end_y - start_y)
+
+
     def _detect_wave_left(self):
-        return self._get_num_waves('left') > NUM_OSC_FOR_WAVE
+        return self._movement_x() < MOVEMENT_THRES and self._get_num_waves('left') > NUM_OSC_FOR_WAVE
 
     def _detect_wave_right(self):
-        return self._get_num_waves('right') > NUM_OSC_FOR_WAVE
+        return self._movement_x() < MOVEMENT_THRES and self._get_num_waves('right') > NUM_OSC_FOR_WAVE
 
     def _detect_wave_double(self):
-        return self._detect_wave_left() and self._detect_wave_right()
+        return self._movement_x() < MOVEMENT_THRES and self._detect_wave_left() and self._detect_wave_right()
 
     def _detect_jump(self):
         highest = 0
