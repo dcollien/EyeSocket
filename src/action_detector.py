@@ -263,11 +263,27 @@ def fix_overlaps(area_a, area_b):
     a_x1, a_x2, a_face = area_a
     b_x1, b_x2, b_face = area_b
 
+    ax, ay, asize = a_face
+    bx, by, bsize = b_face
+
+    a_right_face = ax + asize
+    b_right_face = bx + bsize
+
+    a_useful = True
+    b_useful = True 
+
+    if a_right_face > b_right_face:
+        if ay < by:
+            b_useful = False
+        else:
+            a_useful = False
+
+
     if b_x1 < a_x2:
         # regions are overlapping
         midpoint = (b_x1 + a_x2)/2
-        area_a = (a_x1, midpoint, a_face)
-        area_b = (midpoint, b_x2, b_face)
+        area_a = (a_x1, midpoint, a_face, a_useful)
+        area_b = (midpoint, b_x2, b_face, b_useful)
 
     return (area_a, area_b)
 
@@ -292,6 +308,8 @@ def get_action_regions(features):
     for i in range(num_areas):
         if i < num_areas-1:
             detection_areas[i], detection_areas[i+1] = fix_overlaps(detection_areas[i], detection_areas[i+1])
+
+    detection_areas = [(ax1, amid, aface) for (ax1, amid, aface, is_useful) in detection_areas if is_useful]
 
     return detection_areas
 
