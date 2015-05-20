@@ -19,7 +19,7 @@ def is_bright_enough(min_brightness, frame, x1, y1, x2, y2):
       y = np.random.randint(y1, y2)
       val += frame[y, x]
 
-   return val/num_samples
+   return (val/num_samples) > min_brightness
 
 def detect_faces(frame, scale_factor=1.2, max_size=(200, 200), min_size=(10, 10), min_brightness=5):
    max_height = 25
