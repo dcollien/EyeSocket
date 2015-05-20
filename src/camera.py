@@ -36,7 +36,17 @@ def capture_on_key(capture_keys=None, all_frames=False, quit_key='q'):
 
 def greyscale(img):
    grey_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-   grey_img = cv2.equalizeHist(grey_img)
+   #grey_img = cv2.equalizeHist(grey_img)
+   # Parameters for manipulating image data
+   maxIntensity = 255.0 # depends on dtype of image data
+   phi = 1
+   theta = 1
+
+   # Increase intensity such that
+   # dark pixels become much brighter, 
+   # bright pixels become slightly bright
+   grey_img = (maxIntensity/phi)*(grey_img/(maxIntensity/theta))**0.5
+   grey_img = np.array(grey_img, dtype=np.uint8)
    return grey_img
 
 def set_up_cameras(camera_config):   

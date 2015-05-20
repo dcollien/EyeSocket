@@ -63,7 +63,7 @@ def main(config):
          face_size_ranges.append([(max_size, max_size), (max_size-face_drop, max_size-face_drop)])
          max_size -= face_drop
    else:
-      face_size_ranges = [[(200, 200), (10, 10)]]
+      face_size_ranges = [[(100, 100), (20, 20)]]
       face_scale = 1.2
 
    frame_index = 0
@@ -83,7 +83,8 @@ def main(config):
       grey_frame = camera.greyscale(frame)
 
       if show_debug:
-         debug_frame = copy.copy(frame)
+         debug_frame = copy.copy(grey_frame)
+         debug_frame = cv2.cvtColor(debug_frame, cv2.COLOR_GRAY2BGR)
 
       max_face_size, min_face_size = face_size_ranges[frame_index]
 
@@ -157,6 +158,13 @@ def main(config):
             faces += inferred_faces
             face_data += inferred_face_data
 
+      if show_debug:
+         # render pretty face boxes onto the colored frame
+         debug_render.faces(debug_frame, face_data)
+
+      # detect movement actions from the optic flow and face positions
+      action_regions  = action_detector.get_action_regions(face_data)
+
       if last_frame is not None:
          # calculate the optic flow of the frame, at a low sample rate
          flow = action_detector.calc_flow(last_frame, grey_frame)
@@ -164,16 +172,6 @@ def main(config):
       if flow is not None and show_debug:
          # render a pretty flow onto the colored frame
          debug_render.draw_flow(debug_frame, flow)
-
-      if show_debug:
-         # render pretty face boxes onto the colored frame
-         debug_render.faces(debug_frame, face_data)
-
-      # keep track of the last frame (for flow and template matching)
-      last_frame = grey_frame
-
-      # detect movement actions from the optic flow and face positions
-      action_regions  = action_detector.get_action_regions(face_data)
 
       # calculate face velocities
       for face in face_data:
@@ -185,6 +183,10 @@ def main(config):
       action_detector.detect_actions(grey_frame, flow, action_regions)
 
       packed_features = [pack_feature(feature, (frame_w, frame_h)) for feature in face_data]
+
+
+      # keep track of the last frame (for flow and template matching)
+      last_frame = grey_frame
 
       # send the features over the network
       transport.send_features(packed_features)
