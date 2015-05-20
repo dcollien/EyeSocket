@@ -63,7 +63,7 @@ def main(config):
          face_size_ranges.append([(max_size, max_size), (max_size-face_drop, max_size-face_drop)])
          max_size -= face_drop
    else:
-      face_size_ranges = [[(100, 100), (20, 20)]]
+      face_size_ranges = [[(100, 100), (10, 10)]]
       face_scale = 1.2
 
    frame_index = 0

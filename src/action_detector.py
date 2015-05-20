@@ -260,17 +260,15 @@ def get_action_region(face):
     return (x - detection_area_x, x + detection_area_x, face)
 
 def fix_overlaps(area_a, area_b):
-    a_x1, a_x2, a_face = area_a
-    b_x1, b_x2, b_face = area_b
+    a_x1, a_x2, a_face, a_useful = area_a
+    b_x1, b_x2, b_face, b_useful = area_b
 
-    ax, ay, asize = a_face
-    bx, by, bsize = b_face
+    ax, ay, asize = a_face['feature']
+    bx, by, bsize = b_face['feature']
 
     a_right_face = ax + asize
     b_right_face = bx + bsize
 
-    a_useful = True
-    b_useful = True 
 
     if a_right_face > b_right_face:
         if ay < by:
@@ -302,6 +300,9 @@ def get_action_regions(features):
             face['movement'] = None
 
     detection_areas = sorted(interesting_regions, key=lambda region: region[0])
+
+    detection_areas = [(ax1, amid, aface, True) for (ax1, amid, aface) in detection_areas]
+
 
     num_areas = len(detection_areas)
 
