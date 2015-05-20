@@ -79,7 +79,7 @@ def main(config):
          # wait for quit key to be pressed
          break
 
-      frame = cv2.flip(camera.get_blended_frame(cameras), 1)
+      frame = camera.get_blended_frame(cameras)
       grey_frame = camera.greyscale(frame)
 
       if show_debug:
@@ -91,7 +91,7 @@ def main(config):
       new_faces = face_detector.detect_faces(grey_frame, scale_factor=face_scale, max_size=max_face_size, min_size=min_face_size)
 
       frame_h, frame_w = grey_frame.shape[:2]
-      
+
       if len(new_faces) > 0:
          # Calculate corresponding features in adjacent frames
          corresponding_faces = correspondence.correspond(face_data, faces, new_faces)
@@ -179,7 +179,7 @@ def main(config):
 
       if show_debug:
          debug_render.draw_action_regions(debug_frame, action_regions)
-      
+
       action_detector.detect_actions(grey_frame, flow, action_regions)
 
       packed_features = [pack_feature(feature, (frame_w, frame_h)) for feature in face_data]

@@ -22,18 +22,18 @@ class DetectionWindow(object):
         self.detectors = [
             ('jump', self._detect_jump),
             ('wave_double', self._detect_wave_double),
-            ('wave_left', self._detect_wave_left),
-            ('wave_right', self._detect_wave_right),
+            ('wave_right', self._detect_wave_left),
+            ('wave_left', self._detect_wave_right),
             #('sway', self._detect_sway),
             ('energetic', self._detect_energetic),
             ('still', self._detect_still)
         ]
-    
+
     def add_frame(self, values):
         if len(self.window) >= self.num_frames:
             self.window.popleft()
         self.window.append(values)
-    
+
     def detect_event(self):
         event = None
         for detector in self.detectors:
@@ -48,7 +48,7 @@ class DetectionWindow(object):
 
         for frame in self.window:
             roi = frame.get(side, None)
-            
+
             if roi is None:
                 continue
 
@@ -165,7 +165,7 @@ def detect_movement_in_rect(flow, rect, bounds, step=8, threshold=3, resolution=
     lines = np.vstack([x/resolution, y/resolution, (x+fx)/resolution, (y+fy)/resolution]).T.reshape(-1, 2, 2)
     lines = np.int32(lines + 0.5)
 
-    threshold = threshold**2  
+    threshold = threshold**2
     lines = [np.array([(x1, y1), (x2, y2)]) for (x1, y1), (x2, y2) in lines if (x2 - x1)**2 + (y2 - y1)**2 > threshold]
 
     position = 'top'
@@ -188,7 +188,7 @@ def detect_movement_in_rect(flow, rect, bounds, step=8, threshold=3, resolution=
         n = 1
 
     centerY /= n
-    centerX /= n 
+    centerX /= n
 
     velocity = np.array((velocityX/n, velocityY/n))
 
