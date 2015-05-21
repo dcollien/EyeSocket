@@ -24,8 +24,8 @@ class DetectionWindow(object):
         self.detectors = [
             ('jump', self._detect_jump),
             ('wave_double', self._detect_wave_double),
-            ('wave_right', self._detect_wave_left),
-            ('wave_left', self._detect_wave_right),
+            ('wave_left', self._detect_wave_left),
+            ('wave_right', self._detect_wave_right),
             #('sway', self._detect_sway),
             ('energetic', self._detect_energetic),
             ('still', self._detect_still)
