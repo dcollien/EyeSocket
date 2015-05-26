@@ -162,3 +162,10 @@ def get_frames(quit_key='q', source=0, props=DEFAULT_CAP_PROPS, crop=None):
       yield frame
 
    video_capture.release()
+
+
+def get_focal_length(pixel_height, camera_distance, known_height):
+   return (pixel_height * camera_distance) / known_height
+
+def get_distance(pixel_height, focal_length, known_height=0.2):
+   return (known_height * focal_length) / float(pixel_height)

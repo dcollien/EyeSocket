@@ -22,9 +22,7 @@ def is_bright_enough(min_brightness, frame, rect):
       val += frame[y, x]
 
    av_brightness = (val/num_samples)
-
-   print(av_brightness, min_brightness, av_brightness > min_brightness)
-
+   
    return (av_brightness > min_brightness)
 
 def detect_faces(frame, scale_factor=1.2, max_size=(200, 200), min_size=(10, 10), min_brightness=35):

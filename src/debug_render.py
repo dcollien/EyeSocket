@@ -31,6 +31,10 @@ def faces(frame, faces):
       cv2.putText(frame, str(face['alive_for']), (int(x), int(y + 20)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
       
       cv2.putText(frame, str(face['matches_made']), (int(x), int(y + 40)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
+      cv2.putText(frame, str(face['distance']), (int(x), int(y + 80)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
+
+      if 'movement' in face and face['movement'] is not None:
+         cv2.putText(frame, str(face['movement']._movement_x()), (int(x), int(y + 100)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color)
 
 
 def draw_action_regions(frame, regions):

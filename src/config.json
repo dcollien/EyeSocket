@@ -1,10 +1,13 @@
 {
 	"headless": false,
 	"use_scaling_alternation": false,
+	"max_distance": 2.0,
+	"max_features": 6,
+	"focal_length": 400.0,
 	"max_matches": 50,
 	"cameras": [
 		{
-			"source": 1,
+			"source": 0,
 			"resolution": [640, 480],
 			"crop": null,
 			"offset": [0, 0],

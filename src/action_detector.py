@@ -11,22 +11,25 @@ WAVE_VEL = 0.04
 
 
 NUM_OSC_FOR_WAVE = 3
-SIZE_MUL = 1.45
+SIZE_MUL = 1.2
 SIZE_DIFF = 10
 ENERGETIC_THRES = 50
 
-MOVEMENT_THRES = 35
+MOVEMENT_THRES = 3
 
 class DetectionWindow(object):
-    def __init__(self, window_frames=16):
+    def __init__(self, window_frames=8):
         self.num_frames = window_frames
         self.window = deque([])
         self.detectors = [
             ('jump', self._detect_jump),
+            #('sway', self._detect_sway),
             ('wave_double', self._detect_wave_double),
             ('wave_left', self._detect_wave_left),
             ('wave_right', self._detect_wave_right),
-            #('sway', self._detect_sway),
+            ('energy_double', self._detect_energy_double),
+            ('energy_left', self._detect_energy_left),
+            ('energy_right', self._detect_energy_left),
             ('energetic', self._detect_energetic),
             ('still', self._detect_still)
         ]
@@ -87,6 +90,76 @@ class DetectionWindow(object):
 
     def _detect_wave_double(self):
         return self._movement_x() < MOVEMENT_THRES and self._detect_wave_left() and self._detect_wave_right()
+
+    def _detect_energy_double(self):
+        frame = self.window[-1]
+
+        right = frame.get('right', None)
+        left = frame.get('left', None)
+
+        threshold = 50
+
+        is_detected = False
+
+        if left is not None and right is not None:
+            is_detected = True
+
+            if left['n'] < 5 or right['n'] < 5:
+                is_detected = False
+            else:
+                left_vx, left_vy = left['velocity']
+                right_vx, right_vy = right['velocity']
+
+                if ((left_vy**2) + (left_vx)**2) < threshold:
+                    is_detected = False
+                elif ((right_vy**2) + (right_vx)**2) < threshold:
+                    is_detected = False 
+
+        return self._movement_x() < MOVEMENT_THRES and is_detected
+
+    def _detect_energy_left(self):        
+        frame = self.window[-1]
+
+        left = frame.get('left', None)
+
+        threshold = 10
+
+        is_detected = False
+
+        if left is not None:
+            is_detected = True
+
+            if left['n'] < 5:
+                is_detected = False
+            else:
+                left_vx, left_vy = left['velocity']
+
+                if ((left_vy**2) + (left_vx)**2) < threshold:
+                    is_detected = False
+
+        return self._movement_x() < MOVEMENT_THRES and is_detected
+
+    def _detect_energy_right(self):
+        frame = self.window[-1]
+
+        right = frame.get('right', None)
+
+        threshold = 10
+
+        is_detected = False
+
+        if right is not None:
+            is_detected = True
+
+            if right['n'] < 5:
+                is_detected = False
+            else:
+                right_vx, right_vy = right['velocity']
+
+                if ((right_vy**2) + (right_vx)**2) < threshold:
+                    is_detected = False 
+
+        return self._movement_x() < MOVEMENT_THRES and is_detected
 
     def _detect_jump(self):
         highest = 0
@@ -276,6 +349,7 @@ def fix_overlaps(area_a, area_b):
         else:
             a_useful = False
 
+    # TODO: minimum size of box, regardless of overlap.
 
     if b_x1 < a_x2:
         # regions are overlapping

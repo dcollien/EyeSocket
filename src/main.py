@@ -36,9 +36,28 @@ def pack_feature(feature, dimensions):
 
    action = feature.get('action', 'still')
 
+   if action == 'energy_left':
+      action = 'wave_left'
+   elif action == 'energy_right':
+      action = 'wave_right'
+
    is_interesting = 1 if action_detector.is_interesting(feature) else 0
 
    return (feature['id'], x, y, size, mode, action, faces_matched, guesses_made, vx, vy, is_interesting)
+
+def filter_features(features, max_features=None):
+   filtered_features = []
+
+   sorted_features = sorted(features, key=lambda x: x.get('distance', 0))
+
+   for feature in sorted_features:
+      if feature['alive_for'] > 5 and feature.get('matches_made', 0) < 15:
+         filtered_features.append(feature)
+
+   if max_features is not None:
+      filtered_features = filtered_features[:max_features]
+
+   return filtered_features
 
 def main(config):
 
@@ -52,6 +71,8 @@ def main(config):
 
    cameras = camera.set_up_cameras(config['cameras'])
 
+   focal_length = config['focal_length']
+
    if USE_SCALING_ALTERNATION:
       # generate which face sizes to look for in each frame
       face_size_ranges = []
@@ -63,7 +84,7 @@ def main(config):
          face_size_ranges.append([(max_size, max_size), (max_size-face_drop, max_size-face_drop)])
          max_size -= face_drop
    else:
-      face_size_ranges = [[(100, 100), (10, 10)]]
+      face_size_ranges = [[(200, 200), (20, 20)]]
       face_scale = 1.2
 
    frame_index = 0
@@ -105,11 +126,11 @@ def main(config):
 
       # Reset properties for detected faces
       for face_data_point in face_data:
+         curr_x, curr_y, curr_s = face_data_point['feature']
 
          if not face_data_point.get('has_moved', False):
             has_moved = False
             if 'last_detected_as' in face_data_point:
-               curr_x, curr_y, curr_s = face_data_point['feature']
                last_x, last_y, last_s = face_data_point['last_detected_as']
                if ((last_x - curr_x)**2 + (last_y - curr_y)**2) > 10:
                   has_moved = True
@@ -127,7 +148,8 @@ def main(config):
             'mode': 'detected',
             'last_detected_as': face_data_point['feature'],
             'matches_made': 0,
-            'alive_for': face_data_point.get('alive_for', 0) + 1
+            'alive_for': face_data_point.get('alive_for', 0) + 1,
+            'distance': camera.get_distance(curr_s, focal_length)
          })
 
       # Set properties for inferred faces
@@ -182,7 +204,9 @@ def main(config):
 
       action_detector.detect_actions(grey_frame, flow, action_regions)
 
-      packed_features = [pack_feature(feature, (frame_w, frame_h)) for feature in face_data]
+      features_to_send = filter_features(face_data, config.get('max_features', None))
+
+      packed_features = [pack_feature(feature, (frame_w, frame_h)) for feature in features_to_send]
 
 
       # keep track of the last frame (for flow and template matching)

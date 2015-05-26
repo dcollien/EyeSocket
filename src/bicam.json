@@ -1,6 +1,9 @@
 {
 	"headless": true,
 	"use_scaling_alternation": false,
+	"max_distance": 2.0,
+	"focal_length": 300.0,
+	"max_features": 6,
 	"max_matches": 50,
 	"cameras": [
 		{
