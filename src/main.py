@@ -54,7 +54,7 @@ def filter_features(features, max_features=None):
       if feature['alive_for'] > 5 and feature.get('matches_made', 0) < 15:
          filtered_features.append(feature)
 
-   if max_features is not None:
+   if max_features is not None and max_features > 0:
       filtered_features = filtered_features[:max_features]
 
    return filtered_features
