@@ -36,10 +36,12 @@ def pack_feature(feature, dimensions):
 
    action = feature.get('action', 'still')
 
+   """
    if action == 'energy_left':
       action = 'wave_left'
    elif action == 'energy_right':
       action = 'wave_right'
+   """
 
    is_interesting = 1 if action_detector.is_interesting(feature) else 0
 
