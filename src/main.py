@@ -45,7 +45,7 @@ def pack_feature(feature, dimensions):
 
    is_interesting = 1 if action_detector.is_interesting(feature) else 0
 
-   return (feature['id'], x, y, size, mode, action, faces_matched, guesses_made, vx, vy, is_interesting)
+   return (feature['id'], x, y, size, mode, action, faces_matched, guesses_made, vx, vy, is_interesting, feature.get('distance', 0))
 
 def filter_features(features, max_features=None):
    filtered_features = []
